@@ -1,0 +1,54 @@
+import { Hono } from 'hono'
+import { cors } from 'hono/cors'
+
+type Bindings = {
+  METRICS: KVNamespace
+  ASSETS: Fetcher
+}
+
+const ALLOWED_ACTIONS = new Set([
+  'visit', 'capture', 'open_image', 'copy', 'download',
+  'ext_visit', 'ext_capture', 'ext_open_image', 'ext_copy', 'ext_download',
+])
+
+const app = new Hono<{ Bindings: Bindings }>()
+
+app.use('/api/*', cors())
+
+app.post('/api/track', async (c) => {
+  try {
+    const { action } = await c.req.json<{ action: string }>()
+    if (!ALLOWED_ACTIONS.has(action)) return c.json({ ok: false }, 400)
+    const day = new Date().toISOString().slice(0, 10)
+    const keys = [`total:${action}`, `day:${day}:${action}`]
+    for (const key of keys) {
+      const cur = parseInt((await c.env.METRICS.get(key)) ?? '0', 10)
+      await c.env.METRICS.put(key, String(cur + 1))
+    }
+    return c.json({ ok: true })
+  } catch {
+    return c.json({ ok: false }, 400)
+  }
+})
+
+app.get('/api/stats', async (c) => {
+  const out: Record<string, number> = {}
+  for (const action of ALLOWED_ACTIONS) {
+    out[action] = parseInt((await c.env.METRICS.get(`total:${action}`)) ?? '0', 10)
+  }
+  return c.json(out)
+})
+
+app.get('/robots.txt', (c) => c.text('User-agent: *\nAllow: /\nSitemap: https://ext.zalize.com/sitemap.xml\n'))
+
+app.get('/sitemap.xml', (c) =>
+  c.text(
+    `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n  <url><loc>https://ext.zalize.com/</loc><changefreq>weekly</changefreq></url>\n</urlset>\n`,
+    200,
+    { 'content-type': 'application/xml' },
+  ),
+)
+
+app.get('*', (c) => c.env.ASSETS.fetch(c.req.raw))
+
+export default app

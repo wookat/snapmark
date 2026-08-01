@@ -1,0 +1,18 @@
+{
+  "manifest_version": 3,
+  "name": "SnapMark — Screenshot & Annotate (Lightshot alternative)",
+  "version": "1.0.0",
+  "description": "Capture the visible tab and annotate it with arrows, boxes, text and blur. 100% local — screenshots never leave your device.",
+  "permissions": ["activeTab", "storage"],
+  "action": {
+    "default_title": "SnapMark: capture this tab"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}

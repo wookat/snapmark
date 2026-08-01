@@ -1,0 +1,16 @@
+{
+  "name": "snapmark",
+  "main": "worker/index.ts",
+  "compatibility_date": "2026-07-01",
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application"
+  },
+  "routes": [
+    { "pattern": "ext.zalize.com", "custom_domain": true }
+  ],
+  "kv_namespaces": [
+    { "binding": "METRICS", "id": "f0e214864ec847ae86a92f326fb67002" }
+  ]
+}
