@@ -39,6 +39,9 @@ app.get('/api/stats', async (c) => {
   return c.json(out)
 })
 
+const INDEXNOW_KEY = 'a7c1f4e29b8d4d63a0f5e8c2d9b71a44'
+app.get(`/${INDEXNOW_KEY}.txt`, (c) => c.text(INDEXNOW_KEY))
+
 app.get('/robots.txt', (c) => c.text('User-agent: *\nAllow: /\nSitemap: https://ext.zalize.com/sitemap.xml\n'))
 
 app.get('/sitemap.xml', (c) =>
