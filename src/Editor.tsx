@@ -117,6 +117,7 @@ export default function Editor({ initialImage, onReset }: { initialImage: HTMLIm
   const [textInput, setTextInput] = useState<{ x: number; y: number } | null>(null)
   const [toast, setToast] = useState('')
   const draftRef = useRef<Shape | null>(null)
+  const textMountRef = useRef(0)
 
   const W = base.width
   const H = base.height
@@ -165,12 +166,13 @@ export default function Editor({ initialImage, onReset }: { initialImage: HTMLIm
 
   const onPointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
     if (textInput) return
-    e.currentTarget.setPointerCapture(e.pointerId)
     const p = canvasPoint(e)
     if (tool === 'text') {
+      e.preventDefault()
       setTextInput({ x: p.x, y: p.y })
       return
     }
+    e.currentTarget.setPointerCapture(e.pointerId)
     const s: Shape = { type: tool, x1: p.x, y1: p.y, x2: p.x, y2: p.y, color, width: stroke, points: tool === 'pen' ? [p] : undefined }
     draftRef.current = s
     setDraft(s)
@@ -355,7 +357,12 @@ export default function Editor({ initialImage, onReset }: { initialImage: HTMLIm
           />
           {textInput && (
             <input
-              autoFocus
+              ref={(el) => {
+                if (el) {
+                  textMountRef.current = Date.now()
+                  requestAnimationFrame(() => el.focus())
+                }
+              }}
               placeholder="Type, then Enter"
               className="absolute rounded border border-blue-500 bg-zinc-900/90 px-2 py-1 text-sm text-white outline-none"
               style={{
@@ -366,7 +373,13 @@ export default function Editor({ initialImage, onReset }: { initialImage: HTMLIm
                 if (e.key === 'Enter') commitText((e.target as HTMLInputElement).value)
                 if (e.key === 'Escape') setTextInput(null)
               }}
-              onBlur={(e) => commitText(e.target.value)}
+              onBlur={(e) => {
+                if (Date.now() - textMountRef.current < 200) {
+                  e.target.focus()
+                  return
+                }
+                commitText(e.target.value)
+              }}
             />
           )}
         </div>
