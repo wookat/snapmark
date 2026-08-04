@@ -561,6 +561,16 @@ export default function App() {
               SnapMark is an independent open-source tool and is not affiliated with, endorsed by, or connected to
               Lightshot, Skillbrains, or prnt.sc. “Lightshot” is referenced solely for comparison purposes.
             </p>
+            <p className="mt-2">
+              <span className="font-semibold text-zinc-500">More from ZALIZE:</span>{' '}
+              <a href="https://qr.zalize.com" className="hover:text-zinc-600">HonestQR</a>
+              {' · '}
+              <a href="https://prompter.zalize.com" className="hover:text-zinc-600">PromptCue</a>
+              {' · '}
+              <a href="https://pdf.zalize.com" className="hover:text-zinc-600">PDF Suite</a>
+              {' · '}
+              <a href="https://scribe.zalize.com" className="hover:text-zinc-600">ScribeFlow</a>
+            </p>
             <p className="mt-2">© {new Date().getFullYear()} SnapMark · zalize.com</p>
           </div>
         </div>
