@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { track } from './track'
 
-type Tool = 'arrow' | 'rect' | 'ellipse' | 'line' | 'pen' | 'text' | 'blur' | 'crop'
+type Tool = 'arrow' | 'rect' | 'ellipse' | 'line' | 'pen' | 'highlight' | 'text' | 'counter' | 'blur' | 'crop'
 
 interface Shape {
   type: Tool
@@ -17,15 +17,17 @@ interface Shape {
 
 const COLORS = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#a855f7', '#ffffff', '#18181b']
 
-const TOOLS: { id: Tool; label: string; icon: string }[] = [
-  { id: 'arrow', label: 'Arrow', icon: '↗' },
-  { id: 'rect', label: 'Box', icon: '▭' },
-  { id: 'ellipse', label: 'Ellipse', icon: '◯' },
-  { id: 'line', label: 'Line', icon: '╱' },
-  { id: 'pen', label: 'Pen', icon: '✎' },
-  { id: 'text', label: 'Text', icon: 'T' },
-  { id: 'blur', label: 'Blur', icon: '▒' },
-  { id: 'crop', label: 'Crop', icon: '⤢' },
+const TOOLS: { id: Tool; label: string; icon: string; key: string }[] = [
+  { id: 'arrow', label: 'Arrow', icon: '↗', key: '1' },
+  { id: 'rect', label: 'Box', icon: '▭', key: '2' },
+  { id: 'ellipse', label: 'Ellipse', icon: '◯', key: '3' },
+  { id: 'line', label: 'Line', icon: '╱', key: '4' },
+  { id: 'pen', label: 'Pen', icon: '✎', key: '5' },
+  { id: 'highlight', label: 'Highlight', icon: '▨', key: '6' },
+  { id: 'text', label: 'Text', icon: 'T', key: '7' },
+  { id: 'counter', label: 'Counter', icon: '①', key: '8' },
+  { id: 'blur', label: 'Blur', icon: '▒', key: '9' },
+  { id: 'crop', label: 'Crop', icon: '⤤', key: '0' },
 ]
 
 function drawShape(ctx: CanvasRenderingContext2D, s: Shape, img: HTMLImageElement | HTMLCanvasElement) {
@@ -73,6 +75,27 @@ function drawShape(ctx: CanvasRenderingContext2D, s: Shape, img: HTMLImageElemen
         ctx.stroke()
       }
       break
+    case 'highlight': {
+      ctx.save()
+      ctx.globalAlpha = 0.35
+      ctx.fillRect(Math.min(x1, x2), Math.min(y1, y2), Math.abs(x2 - x1), Math.abs(y2 - y1))
+      ctx.restore()
+      break
+    }
+    case 'counter': {
+      const r = 10 + s.width * 2.5
+      ctx.beginPath()
+      ctx.arc(x1, y1, r, 0, Math.PI * 2)
+      ctx.fill()
+      ctx.fillStyle = s.color === '#ffffff' ? '#18181b' : '#ffffff'
+      ctx.font = `700 ${Math.round(r * 1.1)}px Inter, sans-serif`
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'middle'
+      ctx.fillText(s.text ?? '1', x1, y1 + r * 0.05)
+      ctx.textAlign = 'start'
+      ctx.textBaseline = 'alphabetic'
+      break
+    }
     case 'text':
       if (s.text) {
         const size = 14 + s.width * 6
@@ -173,7 +196,17 @@ export default function Editor({ initialImage, onReset }: { initialImage: HTMLIm
       return
     }
     e.currentTarget.setPointerCapture(e.pointerId)
-    const s: Shape = { type: tool, x1: p.x, y1: p.y, x2: p.x, y2: p.y, color, width: stroke, points: tool === 'pen' ? [p] : undefined }
+    const s: Shape = {
+      type: tool,
+      x1: p.x,
+      y1: p.y,
+      x2: p.x,
+      y2: p.y,
+      color,
+      width: stroke,
+      points: tool === 'pen' ? [p] : undefined,
+      text: tool === 'counter' ? String(shapes.filter((sh) => sh.type === 'counter').length + 1) : undefined,
+    }
     draftRef.current = s
     setDraft(s)
   }
@@ -193,7 +226,7 @@ export default function Editor({ initialImage, onReset }: { initialImage: HTMLIm
     if (!d) return
     draftRef.current = null
     setDraft(null)
-    if (Math.abs(d.x2 - d.x1) < 3 && Math.abs(d.y2 - d.y1) < 3 && d.type !== 'pen') return
+    if (Math.abs(d.x2 - d.x1) < 3 && Math.abs(d.y2 - d.y1) < 3 && d.type !== 'pen' && d.type !== 'counter') return
     if (d.type === 'crop') {
       const cx = Math.round(Math.min(d.x1, d.x2))
       const cy = Math.round(Math.min(d.y1, d.y2))
@@ -240,7 +273,13 @@ export default function Editor({ initialImage, onReset }: { initialImage: HTMLIm
         e.preventDefault()
         if (e.shiftKey) redo()
         else undo()
+        return
       }
+      if (e.ctrlKey || e.metaKey || e.altKey) return
+      const target = e.target as HTMLElement | null
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) return
+      const t = TOOLS.find((tl) => tl.key === e.key)
+      if (t) setTool(t.id)
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
@@ -303,7 +342,7 @@ export default function Editor({ initialImage, onReset }: { initialImage: HTMLIm
             <button
               key={t.id}
               onClick={() => setTool(t.id)}
-              title={t.label}
+              title={`${t.label} (${t.key})`}
               className={`flex h-9 min-w-9 items-center justify-center gap-1 rounded-lg px-2 text-sm font-medium transition ${
                 tool === t.id ? 'bg-blue-600 text-white' : 'text-zinc-300 hover:bg-zinc-800'
               }`}
@@ -324,6 +363,16 @@ export default function Editor({ initialImage, onReset }: { initialImage: HTMLIm
               style={{ backgroundColor: c }}
             />
           ))}
+          <label className="relative ml-0.5 h-6 w-6 cursor-pointer rounded-full" title="Custom color">
+            <span className="absolute inset-0 rounded-full" style={{ background: 'conic-gradient(#ef4444,#eab308,#22c55e,#3b82f6,#a855f7,#ef4444)' }} aria-hidden="true" />
+            <input
+              type="color"
+              value={color}
+              onChange={(e) => setColor(e.target.value)}
+              aria-label="custom color"
+              className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+            />
+          </label>
         </div>
         <input
           type="range"

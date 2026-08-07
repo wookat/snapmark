@@ -45,7 +45,7 @@ const IC = {
 }
 
 const SMALL_FEATURES = [
-  { icon: IC.pen, title: 'Full annotation kit', desc: 'Arrows, boxes, ellipses, lines, freehand pen, text and blur.' },
+  { icon: IC.pen, title: 'Full annotation kit', desc: 'Arrows, boxes, ellipses, lines, pen, highlighter, text, step counters and blur.' },
   { icon: IC.eyeOff, title: 'Pixelate sensitive info', desc: 'Hide emails, tokens and faces before sharing anything.' },
   { icon: IC.crop, title: 'Crop', desc: 'Trim your capture to exactly what matters.' },
   { icon: IC.undo, title: 'Undo / redo', desc: 'Full history — experiment without fear.' },
@@ -70,7 +70,7 @@ function EditorMockup() {
         <span className="h-3 w-3 rounded-full bg-red-400" />
         <span className="h-3 w-3 rounded-full bg-amber-400" />
         <span className="h-3 w-3 rounded-full bg-green-400" />
-        <span className="ml-3 hidden rounded-md bg-white px-3 py-0.5 text-[11px] text-zinc-400 ring-1 ring-zinc-200 sm:block">ext.zalize.com</span>
+        <span className="ml-3 hidden rounded-md bg-white px-3 py-0.5 text-[11px] text-zinc-500 ring-1 ring-zinc-200 sm:block">ext.zalize.com</span>
       </div>
       <div className="flex flex-wrap items-center gap-1 border-b border-zinc-100 bg-white px-3 py-2">
         {['↗', '▭', '◯', '╱', '✎', 'T', '▒', '⤢'].map((t, i) => (
@@ -109,7 +109,7 @@ function EditorMockup() {
 
 function CompareCell({ v }: { v: string }) {
   if (v.startsWith('yes:')) return <span className="inline-flex items-center gap-1.5 text-emerald-600"><Icon d={IC.check} className="h-4 w-4 shrink-0" />{v.slice(4)}</span>
-  if (v.startsWith('no:')) return <span className="inline-flex items-center gap-1.5 text-zinc-400"><Icon d={IC.x} className="h-4 w-4 shrink-0" />{v.slice(3)}</span>
+  if (v.startsWith('no:')) return <span className="inline-flex items-center gap-1.5 text-zinc-500"><Icon d={IC.x} className="h-4 w-4 shrink-0" />{v.slice(3)}</span>
   if (v.startsWith('warn:')) return <span className="inline-flex items-center gap-1.5 text-amber-600"><Icon d={IC.warn} className="h-4 w-4 shrink-0" />{v.slice(5)}</span>
   return <span>{v}</span>
 }
@@ -148,6 +148,16 @@ export default function App() {
     window.addEventListener('paste', onPaste)
     return () => window.removeEventListener('paste', onPaste)
   }, [handleFile])
+
+  const openSample = async () => {
+    try {
+      const img = await loadImage('/sample.png')
+      setImage(img)
+      track('open_image')
+    } catch {
+      /* asset missing */
+    }
+  }
 
   const captureScreen = async () => {
     try {
@@ -245,7 +255,10 @@ export default function App() {
                   <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFile(e.target.files?.[0] ?? null)} />
                 </label>
               </div>
-              <p className="mt-3 text-center text-sm text-zinc-400 lg:text-left">…or paste with <kbd className="rounded border border-zinc-300 bg-white px-1.5 py-0.5 text-xs font-semibold text-zinc-500">Ctrl</kbd>+<kbd className="rounded border border-zinc-300 bg-white px-1.5 py-0.5 text-xs font-semibold text-zinc-500">V</kbd>, or drag &amp; drop anywhere</p>
+              <p className="mt-3 text-center text-sm text-zinc-500 lg:text-left">
+                …or paste with <kbd className="rounded border border-zinc-300 bg-white px-1.5 py-0.5 text-xs font-semibold text-zinc-500">Ctrl</kbd>+<kbd className="rounded border border-zinc-300 bg-white px-1.5 py-0.5 text-xs font-semibold text-zinc-500">V</kbd>, drag &amp; drop anywhere, or{' '}
+                <button onClick={openSample} className="font-semibold text-blue-600 underline decoration-blue-300 underline-offset-2 transition hover:text-blue-500">try a sample image</button>
+              </p>
             </div>
             <ul className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm font-medium text-zinc-500 lg:justify-start">
               {['Free forever', 'No account', 'No uploads', 'No watermark'].map((t) => (
@@ -260,7 +273,7 @@ export default function App() {
         <section className="border-y border-zinc-100 bg-zinc-50/70">
           <div className="mx-auto grid max-w-6xl grid-cols-2 gap-6 px-4 py-10 text-center sm:grid-cols-4 sm:px-6">
             {[
-              ['8 tools', 'annotation toolkit'],
+              ['10 tools', 'annotation toolkit'],
               ['0 uploads', 'everything stays local'],
               ['$0', 'free, no account'],
               ['MV3', 'modern Chrome extension'],
@@ -284,7 +297,7 @@ export default function App() {
                 Full undo/redo history means you can experiment freely.
               </p>
               <ul className="mt-6 space-y-3 text-[15px] text-zinc-600">
-                {['8 annotation tools with adjustable colors and stroke width', 'Crop to the exact area you need', 'Keyboard shortcuts: Ctrl+Z / Ctrl+Shift+Z'].map((t) => (
+                {['10 annotation tools with custom colors and stroke width', 'Numbered step counters and highlighter for tutorials', 'Keyboard shortcuts: 1–0 to switch tools, Ctrl+Z / Ctrl+Shift+Z'].map((t) => (
                   <li key={t} className="flex items-start gap-2.5"><Icon d={IC.check} className="mt-0.5 h-5 w-5 shrink-0 text-blue-600" />{t}</li>
                 ))}
               </ul>
@@ -318,7 +331,7 @@ export default function App() {
                         <span className="text-zinc-600">{k}</span>
                         {v === 'yes'
                           ? <span className="inline-flex items-center gap-1 font-semibold text-emerald-600"><Icon d={IC.check} className="h-4 w-4" />Stored</span>
-                          : <span className="inline-flex items-center gap-1 font-semibold text-zinc-400"><Icon d={IC.x} className="h-4 w-4" />Never</span>}
+                          : <span className="inline-flex items-center gap-1 font-semibold text-zinc-500"><Icon d={IC.x} className="h-4 w-4" />Never</span>}
                       </div>
                     ))}
                   </div>
@@ -403,7 +416,7 @@ export default function App() {
             <table className="w-full min-w-[560px] text-left text-sm">
               <thead>
                 <tr className="border-b border-zinc-200 bg-zinc-50 text-zinc-500">
-                  <th className="px-5 py-3.5 font-semibold">&nbsp;</th>
+                  <th className="px-5 py-3.5 font-semibold"><span className="sr-only">Feature</span></th>
                   <th className="px-5 py-3.5 font-bold text-blue-600">SnapMark</th>
                   <th className="px-5 py-3.5 font-semibold">Lightshot</th>
                 </tr>
@@ -458,7 +471,7 @@ export default function App() {
                   Install instructions
                 </a>
               </div>
-              <p className="mt-4 text-sm text-zinc-400">Chrome Web Store listing pending. Meanwhile: unzip → chrome://extensions → Developer mode → “Load unpacked”.</p>
+              <p className="mt-4 text-sm text-zinc-500">Chrome Web Store listing pending. Meanwhile: unzip → chrome://extensions → Developer mode → “Load unpacked”.</p>
             </div>
             <ol className="space-y-4">
               {[
@@ -486,7 +499,7 @@ export default function App() {
               <details key={f.q} className="group px-6 py-5">
                 <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-semibold text-zinc-900 [&::-webkit-details-marker]:hidden">
                   {f.q}
-                  <span className="text-zinc-400 transition group-open:rotate-45"><Icon d="M12 5v14 M5 12h14" className="h-5 w-5" /></span>
+                  <span className="text-zinc-500 transition group-open:rotate-45"><Icon d="M12 5v14 M5 12h14" className="h-5 w-5" /></span>
                 </summary>
                 <p className="mt-3 text-[15px] leading-relaxed text-zinc-500">{f.a}</p>
               </details>
@@ -556,7 +569,7 @@ export default function App() {
               </p>
             </div>
           </div>
-          <div className="mt-10 border-t border-zinc-200 pt-6 text-xs leading-relaxed text-zinc-400">
+          <div className="mt-10 border-t border-zinc-200 pt-6 text-xs leading-relaxed text-zinc-500">
             <p>
               SnapMark is an independent open-source tool and is not affiliated with, endorsed by, or connected to
               Lightshot, Skillbrains, or prnt.sc. “Lightshot” is referenced solely for comparison purposes.
