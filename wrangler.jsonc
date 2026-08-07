@@ -5,7 +5,8 @@
   "assets": {
     "directory": "./dist",
     "binding": "ASSETS",
-    "not_found_handling": "single-page-application"
+    // Single-page site: unknown paths get a real 404 (avoids SEO soft-404s).
+    "not_found_handling": "404-page"
   },
   "routes": [
     { "pattern": "ext.zalize.com", "custom_domain": true }
