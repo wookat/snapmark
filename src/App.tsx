@@ -454,9 +454,7 @@ export default function App() {
               </p>
               <div className="mt-7 flex flex-col gap-3 sm:flex-row">
                 <a
-                  href="https://github.com/wookat/snapmark/releases"
-                  target="_blank"
-                  rel="noreferrer"
+                  href="https://github.com/wookat/snapmark/releases/latest/download/snapmark-extension.zip"
                   className="inline-flex items-center justify-center gap-2 rounded-full bg-blue-600 px-7 py-3.5 text-[15px] font-bold text-white shadow-lg shadow-blue-600/30 transition hover:bg-blue-500"
                 >
                   <Icon d={IC.download} className="h-5 w-5" />
@@ -475,7 +473,7 @@ export default function App() {
             </div>
             <ol className="space-y-4">
               {[
-                ['Download & unzip', 'Grab snapmark-extension.zip from GitHub Releases'],
+                ['Download & unzip', 'One click above — snapmark-extension.zip downloads directly'],
                 ['Load in Chrome', 'chrome://extensions → Developer mode → Load unpacked'],
                 ['Capture any page', 'Click the toolbar icon — the tab opens in the editor instantly'],
               ].map(([title, sub], i) => (

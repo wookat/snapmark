@@ -269,15 +269,31 @@ export default function Editor({ initialImage, onReset }: { initialImage: HTMLIm
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null
+      const inField = !!target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')
       if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
         e.preventDefault()
         if (e.shiftKey) redo()
         else undo()
         return
       }
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault()
+        downloadRef.current?.()
+        return
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'c' && !inField && !window.getSelection()?.toString()) {
+        e.preventDefault()
+        copyRef.current?.()
+        return
+      }
+      if (e.key === 'Escape' && draftRef.current) {
+        draftRef.current = null
+        setDraft(null)
+        return
+      }
       if (e.ctrlKey || e.metaKey || e.altKey) return
-      const target = e.target as HTMLElement | null
-      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) return
+      if (inField) return
       const t = TOOLS.find((tl) => tl.key === e.key)
       if (t) setTool(t.id)
     }
@@ -301,6 +317,9 @@ export default function Editor({ initialImage, onReset }: { initialImage: HTMLIm
     setTimeout(() => setToast(''), 2000)
   }
 
+  const downloadRef = useRef<() => void>(null)
+  const copyRef = useRef<() => void>(null)
+
   const download = async () => {
     const blob = await exportBlob()
     const a = document.createElement('a')
@@ -323,6 +342,9 @@ export default function Editor({ initialImage, onReset }: { initialImage: HTMLIm
     }
   }
 
+  downloadRef.current = download
+  copyRef.current = copy
+
   const commitText = (value: string) => {
     if (textInput && value.trim()) {
       setShapes((prev) => [
@@ -336,8 +358,8 @@ export default function Editor({ initialImage, onReset }: { initialImage: HTMLIm
 
   return (
     <div className="flex h-full flex-col bg-zinc-950 text-zinc-100">
-      <div className="flex flex-wrap items-center gap-2 border-b border-zinc-800 bg-zinc-900/80 px-3 py-2 backdrop-blur">
-        <div className="flex items-center gap-1 overflow-x-auto">
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 border-b border-zinc-800 bg-zinc-900/80 px-2 py-1.5 backdrop-blur sm:px-3 sm:py-2">
+        <div className="flex w-full items-center gap-1 overflow-x-auto sm:w-auto">
           {TOOLS.map((t) => (
             <button
               key={t.id}
@@ -352,18 +374,18 @@ export default function Editor({ initialImage, onReset }: { initialImage: HTMLIm
             </button>
           ))}
         </div>
-        <div className="mx-1 h-6 w-px bg-zinc-700" />
+        <div className="mx-1 hidden h-6 w-px bg-zinc-700 sm:block" />
         <div className="flex items-center gap-1">
           {COLORS.map((c) => (
             <button
               key={c}
               onClick={() => setColor(c)}
               aria-label={`color ${c}`}
-              className={`h-6 w-6 rounded-full border-2 transition ${color === c ? 'scale-110 border-white' : 'border-transparent'}`}
+              className={`h-5 w-5 rounded-full border-2 transition sm:h-6 sm:w-6 ${color === c ? 'scale-110 border-white' : 'border-transparent'}`}
               style={{ backgroundColor: c }}
             />
           ))}
-          <label className="relative ml-0.5 h-6 w-6 cursor-pointer rounded-full" title="Custom color">
+          <label className="relative ml-0.5 h-5 w-5 cursor-pointer rounded-full sm:h-6 sm:w-6" title="Custom color">
             <span className="absolute inset-0 rounded-full" style={{ background: 'conic-gradient(#ef4444,#eab308,#22c55e,#3b82f6,#a855f7,#ef4444)' }} aria-hidden="true" />
             <input
               type="color"
@@ -380,16 +402,16 @@ export default function Editor({ initialImage, onReset }: { initialImage: HTMLIm
           max={12}
           value={stroke}
           onChange={(e) => setStroke(Number(e.target.value))}
-          className="w-20 accent-blue-500"
+          className="w-14 accent-blue-500 sm:w-20"
           aria-label="stroke width"
         />
-        <div className="mx-1 h-6 w-px bg-zinc-700" />
-        <button onClick={undo} className="rounded-lg px-2 py-1.5 text-sm text-zinc-300 hover:bg-zinc-800" title="Undo (Ctrl+Z)">↩ Undo</button>
-        <button onClick={redo} disabled={!redoStack.length} className="rounded-lg px-2 py-1.5 text-sm text-zinc-300 hover:bg-zinc-800 disabled:opacity-40" title="Redo (Ctrl+Shift+Z)">↪</button>
-        <div className="ml-auto flex items-center gap-2">
-          <button onClick={copy} className="rounded-lg bg-zinc-800 px-3 py-1.5 text-sm font-medium hover:bg-zinc-700">Copy</button>
-          <button onClick={download} className="rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-blue-500">Download PNG</button>
-          <button onClick={onReset} className="rounded-lg px-2 py-1.5 text-sm text-zinc-400 hover:bg-zinc-800" title="New image">✕</button>
+        <div className="mx-1 hidden h-6 w-px bg-zinc-700 sm:block" />
+        <button onClick={undo} className="rounded-lg px-1.5 py-1.5 text-sm text-zinc-300 hover:bg-zinc-800 sm:px-2" title="Undo (Ctrl+Z)">↩<span className="hidden sm:inline"> Undo</span></button>
+        <button onClick={redo} disabled={!redoStack.length} className="rounded-lg px-1.5 py-1.5 text-sm text-zinc-300 hover:bg-zinc-800 disabled:opacity-40 sm:px-2" title="Redo (Ctrl+Shift+Z)">↪</button>
+        <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
+          <button onClick={copy} className="rounded-lg bg-zinc-800 px-2.5 py-1.5 text-sm font-medium hover:bg-zinc-700 sm:px-3" title="Copy to clipboard (Ctrl+C)">Copy</button>
+          <button onClick={download} className="rounded-lg bg-blue-600 px-2.5 py-1.5 text-sm font-semibold text-white hover:bg-blue-500 sm:px-3" title="Download PNG (Ctrl+S)"><span className="hidden sm:inline">Download </span>PNG</button>
+          <button onClick={onReset} className="rounded-lg px-1.5 py-1.5 text-sm text-zinc-400 hover:bg-zinc-800 sm:px-2" title="New image">✕</button>
         </div>
       </div>
       <div ref={wrapRef} className="relative flex flex-1 items-center justify-center overflow-auto bg-zinc-950 p-3">
