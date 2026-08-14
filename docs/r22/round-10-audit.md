@@ -43,3 +43,15 @@
 
 ## progress
 audit 完成，等待修改员 fix。
+
+---
+
+## Verdict（审查员线上复验，2026-08-14）
+
+- R10-1 **PASS**：evil Origin 实测 403、本站 Origin 200；持久连接第 30 次起稳定 429（per-isolate 尽力而为的限制已在 fix 中如实标注，接受）。
+- R10-2 **PASS**：main 实查 pendingCapture 走 loadImage→normalizeImage→setImage，.catch 提示 + .finally 清除 storage（扩展真机加载受环境限制未实测，代码路径与共用管线已确认）。
+- R10-3 **PASS**：permissions-policy 头实测存在（camera/microphone/geolocation/payment 关闭，display-capture 保留）；Capture screen 按钮正常出现，编辑器回归正常。
+- R10-4 **PASS**：/api/stats 实测 `cache-control: public, max-age=60`，保持公开（接受）。
+- R10-5 **PASS**：FAQ 直出 HTML 实测含匿名计数诚实披露（"never image or page content… verify in the open source code"）。
+
+结论：5/5 PASS。第 10 轮闭环，进入第 11 轮（回归总审）。
