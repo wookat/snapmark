@@ -1,8 +1,10 @@
 # Round 10 — Fix report（修改员）
 
 PR: https://github.com/wookat/snapmark/pull/17 （已合并入 main）
-部署: worker version `6c73a775-ee59-4618-8eac-d14d0668ac46` @ https://ext.zalize.com
+部署: worker version `e38802e6-5572-4948-ba19-513d6c99ed64` @ https://ext.zalize.com（从合并后的 main 构建）
 本地验证: lint / build 全绿。
+
+**部署纠偏（如实记录）**：首次部署 `6c73a775` 时第 10 轮分支基于的 origin/main 尚未包含刚合并的 #16（第 9 轮 a11y），导致线上短暂回退第 9 轮改动；测试代理发现扩展本地构建缺 canvas role 后追查确认。已从合并后的 main 重新构建部署 `e38802e6`，生产 bundle 实测同时含第 9 轮（Annotation canvas aria-label、skip link）与第 10 轮（403/permissions-policy）。教训：部署前必须 `git pull` 最新 main 或校验分支含所有已合并轮次。
 
 ## 逐项响应
 
