@@ -40,3 +40,15 @@
 
 ## progress
 audit 完成，等待修改员 fix。
+
+---
+
+## Verdict（审查员线上复验，2026-08-14）
+
+- R9-1 **PASS**：warn 文案实测为 text-amber-800（#92400e on #fff ≈6.9:1），图标保留 amber-600。
+- R9-2 **PASS**：常驻 `[role=status]` 容器存在；Ctrl+C 后实测播报 "Copied to clipboard"。
+- R9-3 **PASS**：canvas `role="img"`，aria-label 动态（1200×750 → 裁剪后实测 350×250）。
+- R9-4 **PASS**：首个 Tab 聚焦 "Skip to content"（href=#main，absolute 浮现），#main 存在。
+- R9-5 **PASS**：`role=toolbar` ×1 + 三个 `role=group`（Drawing tools / Color and stroke / Export and file actions）。
+
+结论：5/5 PASS。第 9 轮闭环，进入第 10 轮（安全与滥用专项）。
