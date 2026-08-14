@@ -295,7 +295,7 @@ export default function Editor({ initialImage, onReset }: { initialImage: HTMLIm
     const onKey = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null
       const inField = !!target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')
-      if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
         e.preventDefault()
         if (e.shiftKey) redoRef.current?.()
         else undoRef.current?.()
