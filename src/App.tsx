@@ -19,6 +19,33 @@ function loadImage(src: string): Promise<HTMLImageElement> {
   })
 }
 
+// Mobile Safari caps canvases at ~16.7MP; stay below it and keep exports snappy.
+const MAX_PIXELS = 16_000_000
+// SVGs without explicit dimensions rasterize tiny; upscale small ones for a usable canvas.
+const MIN_SVG_EDGE = 1024
+
+async function normalizeImage(img: HTMLImageElement, isSvg: boolean): Promise<{ img: HTMLImageElement; note?: string }> {
+  const w = img.naturalWidth || img.width
+  const h = img.naturalHeight || img.height
+  let scale = 1
+  let note: string | undefined
+  if (isSvg && Math.max(w, h) < MIN_SVG_EDGE) {
+    scale = MIN_SVG_EDGE / Math.max(w, h)
+    note = `SVG rasterized at ${Math.round(w * scale)}×${Math.round(h * scale)}`
+  } else if (w * h > MAX_PIXELS) {
+    scale = Math.sqrt(MAX_PIXELS / (w * h))
+    note = `Large image scaled to ${Math.round(w * scale)}×${Math.round(h * scale)} for compatibility`
+  }
+  if (scale === 1) return { img }
+  const c = document.createElement('canvas')
+  c.width = Math.round(w * scale)
+  c.height = Math.round(h * scale)
+  const ctx = c.getContext('2d')!
+  ctx.imageSmoothingQuality = 'high'
+  ctx.drawImage(img, 0, 0, c.width, c.height)
+  return { img: await loadImage(c.toDataURL('image/png')), note }
+}
+
 function Icon({ d, className = 'h-5 w-5' }: { d: string; className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -119,6 +146,7 @@ function CompareCell({ v }: { v: string }) {
 export default function App() {
   const [image, setImage] = useState<HTMLImageElement | null>(null)
   const [dragOver, setDragOver] = useState(false)
+  const [notice, setNotice] = useState('')
 
   useEffect(() => {
     track('visit')
@@ -133,13 +161,22 @@ export default function App() {
   }, [])
 
   const handleFile = useCallback((file: File | null) => {
-    if (!file || !file.type.startsWith('image/')) return
+    if (!file) return
+    if (!file.type.startsWith('image/')) {
+      setNotice('Only image files are supported (PNG, JPEG, WebP, GIF, SVG…)')
+      return
+    }
+    setNotice('')
     const url = URL.createObjectURL(file)
-    loadImage(url).then((img) => {
-      setImage(img)
-      track('open_image')
-      URL.revokeObjectURL(url)
-    })
+    loadImage(url)
+      .then((img) => normalizeImage(img, file.type === 'image/svg+xml'))
+      .then(({ img, note }) => {
+        if (note) setNotice(note)
+        setImage(img)
+        track('open_image')
+      })
+      .catch(() => setNotice('Could not load that file — it may be corrupted or unsupported.'))
+      .finally(() => URL.revokeObjectURL(url))
   }, [])
 
   useEffect(() => {
@@ -265,6 +302,11 @@ export default function App() {
                   <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFile(e.target.files?.[0] ?? null)} />
                 </label>
               </div>
+              {notice && (
+                <p role="alert" className="mt-3 text-center text-sm font-medium text-amber-700 lg:text-left">
+                  {notice}
+                </p>
+              )}
               <p className="mt-3 text-center text-sm text-zinc-500 lg:text-left">
                 …or paste with <kbd className="rounded border border-zinc-300 bg-white px-1.5 py-0.5 text-xs font-semibold text-zinc-500">Ctrl</kbd>+<kbd className="rounded border border-zinc-300 bg-white px-1.5 py-0.5 text-xs font-semibold text-zinc-500">V</kbd>, drag &amp; drop anywhere, or{' '}
                 <button onClick={openSample} className="font-semibold text-blue-600 underline decoration-blue-300 underline-offset-2 transition hover:text-blue-500">try a sample image</button>

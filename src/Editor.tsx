@@ -36,7 +36,7 @@ export const TOOLS: { id: Tool; label: string; icon: string; key: string }[] = [
   { id: 'crop', label: 'Crop', icon: '⤤', key: '0' },
 ]
 
-function drawShape(ctx: CanvasRenderingContext2D, s: Shape, img: HTMLImageElement | HTMLCanvasElement) {
+function drawShape(ctx: CanvasRenderingContext2D, s: Shape) {
   ctx.strokeStyle = s.color
   ctx.fillStyle = s.color
   ctx.lineWidth = s.width
@@ -107,7 +107,10 @@ function drawShape(ctx: CanvasRenderingContext2D, s: Shape, img: HTMLImageElemen
         const size = 14 + s.width * 6
         ctx.font = `600 ${size}px Inter, sans-serif`
         ctx.textBaseline = 'top'
-        ctx.fillText(s.text, Math.min(x1, x2), Math.min(y1, y2))
+        const tw = ctx.measureText(s.text).width
+        const tx = Math.max(0, Math.min(Math.min(x1, x2), ctx.canvas.width - tw))
+        const ty = Math.max(0, Math.min(Math.min(y1, y2), ctx.canvas.height - size * 1.2))
+        ctx.fillText(s.text, tx, ty)
       }
       break
     case 'blur': {
@@ -122,7 +125,7 @@ function drawShape(ctx: CanvasRenderingContext2D, s: Shape, img: HTMLImageElemen
       tmp.height = Math.max(1, Math.ceil(bh / px))
       const tctx = tmp.getContext('2d')!
       tctx.imageSmoothingEnabled = true
-      tctx.drawImage(img, bx, by, bw, bh, 0, 0, tmp.width, tmp.height)
+      tctx.drawImage(ctx.canvas, bx, by, bw, bh, 0, 0, tmp.width, tmp.height)
       ctx.imageSmoothingEnabled = false
       ctx.drawImage(tmp, 0, 0, tmp.width, tmp.height, bx, by, bw, bh)
       ctx.imageSmoothingEnabled = true
@@ -158,10 +161,18 @@ export default function Editor({ initialImage, onReset }: { initialImage: HTMLIm
     const ctx = canvas.getContext('2d')!
     ctx.clearRect(0, 0, W, H)
     ctx.drawImage(base, 0, 0)
-    for (const s of shapes) drawShape(ctx, s, base)
+    for (const s of shapes) drawShape(ctx, s)
     const d = draftRef.current
     if (d) {
-      if (d.type === 'crop') {
+      if (d.type === 'blur') {
+        drawShape(ctx, d)
+        ctx.save()
+        ctx.strokeStyle = 'rgba(59,130,246,0.9)'
+        ctx.lineWidth = 1.5
+        ctx.setLineDash([5, 4])
+        ctx.strokeRect(Math.min(d.x1, d.x2), Math.min(d.y1, d.y2), Math.abs(d.x2 - d.x1), Math.abs(d.y2 - d.y1))
+        ctx.restore()
+      } else if (d.type === 'crop') {
         ctx.save()
         ctx.fillStyle = 'rgba(0,0,0,0.5)'
         ctx.fillRect(0, 0, W, H)
@@ -177,7 +188,7 @@ export default function Editor({ initialImage, onReset }: { initialImage: HTMLIm
         ctx.strokeRect(Math.min(d.x1, d.x2), Math.min(d.y1, d.y2), Math.abs(d.x2 - d.x1), Math.abs(d.y2 - d.y1))
         ctx.restore()
       } else {
-        drawShape(ctx, d, base)
+        drawShape(ctx, d)
       }
     }
   }, [base, shapes, W, H])
@@ -245,7 +256,7 @@ export default function Editor({ initialImage, onReset }: { initialImage: HTMLIm
       flat.height = H
       const fctx = flat.getContext('2d')!
       fctx.drawImage(base, 0, 0)
-      for (const s of shapes) drawShape(fctx, s, base)
+      for (const s of shapes) drawShape(fctx, s)
       const next = document.createElement('canvas')
       next.width = cw
       next.height = ch
@@ -291,6 +302,22 @@ export default function Editor({ initialImage, onReset }: { initialImage: HTMLIm
   undoRef.current = undo
   redoRef.current = redo
 
+  const dirty = history.length > 0 || shapes.length > 0
+
+  useEffect(() => {
+    if (!dirty) return
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault()
+    }
+    window.addEventListener('beforeunload', onBeforeUnload)
+    return () => window.removeEventListener('beforeunload', onBeforeUnload)
+  }, [dirty])
+
+  const confirmReset = () => {
+    if (dirty && !window.confirm('Discard this image and all annotations?')) return
+    onReset()
+  }
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null
@@ -332,7 +359,7 @@ export default function Editor({ initialImage, onReset }: { initialImage: HTMLIm
       c.height = H
       const ctx = c.getContext('2d')!
       ctx.drawImage(base, 0, 0)
-      for (const s of shapes) drawShape(ctx, s, base)
+      for (const s of shapes) drawShape(ctx, s)
       c.toBlob((b) => resolve(b!), 'image/png')
     })
 
@@ -348,7 +375,7 @@ export default function Editor({ initialImage, onReset }: { initialImage: HTMLIm
     const blob = await exportBlob()
     const a = document.createElement('a')
     a.href = URL.createObjectURL(blob)
-    a.download = `snapmark-${Date.now()}.png`
+    a.download = `snapmark-${new Date().toISOString().slice(0, 19).replace('T', '-').replaceAll(':', '')}.png`
     a.click()
     URL.revokeObjectURL(a.href)
     track('download')
@@ -371,10 +398,9 @@ export default function Editor({ initialImage, onReset }: { initialImage: HTMLIm
 
   const commitText = (value: string) => {
     if (textInput && value.trim()) {
-      setShapes((prev) => [
-        ...prev,
-        { type: 'text', x1: textInput.x, y1: textInput.y, x2: textInput.x, y2: textInput.y, color, width: stroke, text: value.trim() },
-      ])
+      const s: Shape = { type: 'text', x1: textInput.x, y1: textInput.y, x2: textInput.x, y2: textInput.y, color, width: stroke, text: value.trim() }
+      setShapes((prev) => [...prev, s])
+      setHistory((h) => [...h, { kind: 'shape', shape: s }])
       setRedoStack([])
     }
     setTextInput(null)
@@ -437,7 +463,7 @@ export default function Editor({ initialImage, onReset }: { initialImage: HTMLIm
         <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
           <button onClick={copy} className="rounded-lg bg-zinc-800 px-2.5 py-1.5 text-sm font-medium hover:bg-zinc-700 sm:px-3" title="Copy to clipboard (Ctrl+C)">Copy</button>
           <button onClick={download} className="rounded-lg bg-blue-600 px-2.5 py-1.5 text-sm font-semibold text-white hover:bg-blue-500 sm:px-3" title="Download PNG (Ctrl+S)"><span className="hidden sm:inline">Download </span>PNG</button>
-          <button onClick={onReset} className="rounded-lg px-1.5 py-1.5 text-sm text-zinc-400 hover:bg-zinc-800 sm:px-2" title="New image">✕</button>
+          <button onClick={confirmReset} aria-label="New image" className="rounded-lg px-1.5 py-1.5 text-sm text-zinc-400 hover:bg-zinc-800 sm:px-2" title="New image">✕</button>
         </div>
       </div>
       <div ref={wrapRef} className="relative flex flex-1 items-center justify-center overflow-auto bg-zinc-950 p-3">
@@ -463,8 +489,9 @@ export default function Editor({ initialImage, onReset }: { initialImage: HTMLIm
               placeholder="Type, then Enter"
               className="absolute rounded border border-blue-500 bg-zinc-900/90 px-2 py-1 font-semibold text-white outline-none"
               style={{
-                left: `${(textInput.x / W) * 100}%`,
-                top: `${(textInput.y / H) * 100}%`,
+                left: `${Math.min((textInput.x / W) * 100, 70)}%`,
+                top: `${Math.min((textInput.y / H) * 100, 92)}%`,
+                maxWidth: `${100 - Math.min((textInput.x / W) * 100, 70)}%`,
                 fontSize: `${(14 + stroke * 6) * ((canvasRef.current?.getBoundingClientRect().width ?? W) / W)}px`,
               }}
               onKeyDown={(e) => {
