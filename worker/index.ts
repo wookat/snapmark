@@ -61,14 +61,6 @@ app.get(`/${INDEXNOW_KEY}.txt`, (c) => c.text(INDEXNOW_KEY))
 
 app.get('/robots.txt', (c) => c.text('User-agent: *\nAllow: /\nSitemap: https://ext.zalize.com/sitemap.xml\n'))
 
-app.get('/sitemap.xml', (c) =>
-  c.text(
-    `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n  <url><loc>https://ext.zalize.com/</loc><changefreq>weekly</changefreq></url>\n</urlset>\n`,
-    200,
-    { 'content-type': 'application/xml' },
-  ),
-)
-
 const SECURITY_HEADERS: Record<string, string> = {
   'strict-transport-security': 'max-age=31536000; includeSubDomains',
   'x-content-type-options': 'nosniff',

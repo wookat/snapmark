@@ -1,7 +1,5 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { TOOLS } from './Editor'
-
-const canCaptureScreen = typeof navigator !== 'undefined' && !!navigator.mediaDevices?.getDisplayMedia
 
 function Icon({ d, className = 'h-5 w-5' }: { d: string; className?: string }) {
   return (
@@ -122,6 +120,11 @@ export default function Landing({
   onCapture: () => void
 }) {
   const [dragOver, setDragOver] = useState(false)
+  // Detected after mount so prerendered HTML and first client render match on every device.
+  const [canCaptureScreen, setCanCaptureScreen] = useState(false)
+  useEffect(() => {
+    setCanCaptureScreen(!!navigator.mediaDevices?.getDisplayMedia)
+  }, [])
   return (
     <div
       className="min-h-full bg-white text-zinc-900"
@@ -415,16 +418,10 @@ export default function Landing({
                   <Icon d={IC.download} className="h-5 w-5" />
                   Download extension (.zip)
                 </a>
-                <a
-                  href="https://github.com/wookat/snapmark#install-the-extension"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center justify-center rounded-full border border-zinc-300 bg-white px-7 py-3.5 text-[15px] font-semibold text-zinc-700 transition hover:border-zinc-400"
-                >
-                  Install instructions
-                </a>
               </div>
-              <p className="mt-4 text-sm text-zinc-500">Chrome Web Store listing pending. Meanwhile: unzip → chrome://extensions → Developer mode → “Load unpacked”.</p>
+              <p className="mt-4 text-sm text-zinc-500">
+                Not yet on the Chrome Web Store — for now it loads manually in under a minute with the three steps here.
+              </p>
             </div>
             <ol className="space-y-4">
               {[
@@ -482,9 +479,7 @@ export default function Landing({
                 </label>
               )}
               <a
-                href="https://github.com/wookat/snapmark/releases"
-                target="_blank"
-                rel="noreferrer"
+                href="#extension"
                 className="inline-flex w-full items-center justify-center rounded-full border border-white/40 px-8 py-3.5 text-[15px] font-semibold text-white transition hover:bg-white/10 sm:w-auto"
               >
                 Get the extension
