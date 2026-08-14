@@ -43,3 +43,15 @@
 
 ## progress
 audit 完成，等待修改员 fix。
+
+---
+
+## Verdict（审查员线上复验，2026-08-14）
+
+- R8-1 **PASS**：`curl /` 直出完整 h1/FAQ/对比表 HTML；真浏览器水合零告警，交互（sample→编辑器 1200×750）正常。
+- R8-2 **PASS**：sitemap 实测 `<lastmod>2026-08-14</lastmod>`，changefreq 已删。
+- R8-3 **PASS**：apple-touch-icon.png 与 favicon-48.png 均 200 image/png。
+- R8-4 **PASS（过渡修，接受）**：页面已明示未上架 + 页内 3 步指引；CWS 上架挂账为外部资源（老板侧账号），符合 CHARTER 资源缺口不阻塞。
+- R8-5 **PASS**：两个「Get the extension」CTA href 均为 #extension，zip 直链归于扩展区块。
+
+结论：5/5 PASS（R8-4 商店上架部分挂账）。第 8 轮闭环，进入第 9 轮（无障碍专项）。
