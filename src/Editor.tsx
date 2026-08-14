@@ -15,9 +15,15 @@ interface Shape {
   points?: { x: number; y: number }[]
 }
 
+type Base = HTMLImageElement | HTMLCanvasElement
+
+type Op =
+  | { kind: 'shape'; shape: Shape }
+  | { kind: 'crop'; prevBase: Base; prevShapes: Shape[]; nextBase: HTMLCanvasElement }
+
 const COLORS = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#a855f7', '#ffffff', '#18181b']
 
-const TOOLS: { id: Tool; label: string; icon: string; key: string }[] = [
+export const TOOLS: { id: Tool; label: string; icon: string; key: string }[] = [
   { id: 'arrow', label: 'Arrow', icon: '↗', key: '1' },
   { id: 'rect', label: 'Box', icon: '▭', key: '2' },
   { id: 'ellipse', label: 'Ellipse', icon: '◯', key: '3' },
@@ -132,7 +138,8 @@ export default function Editor({ initialImage, onReset }: { initialImage: HTMLIm
   const wrapRef = useRef<HTMLDivElement>(null)
   const [base, setBase] = useState<HTMLImageElement | HTMLCanvasElement>(initialImage)
   const [shapes, setShapes] = useState<Shape[]>([])
-  const [redoStack, setRedoStack] = useState<Shape[]>([])
+  const [history, setHistory] = useState<Op[]>([])
+  const [redoStack, setRedoStack] = useState<Op[]>([])
   const [tool, setTool] = useState<Tool>('arrow')
   const [color, setColor] = useState(COLORS[0])
   const [stroke, setStroke] = useState(4)
@@ -243,29 +250,46 @@ export default function Editor({ initialImage, onReset }: { initialImage: HTMLIm
       next.width = cw
       next.height = ch
       next.getContext('2d')!.drawImage(flat, cx, cy, cw, ch, 0, 0, cw, ch)
+      setHistory((h) => [...h, { kind: 'crop', prevBase: base, prevShapes: shapes, nextBase: next }])
       setBase(next)
       setShapes([])
       setRedoStack([])
       return
     }
     setShapes((prev) => [...prev, d])
+    setHistory((h) => [...h, { kind: 'shape', shape: d }])
     setRedoStack([])
   }
 
   const undo = () => {
-    setShapes((prev) => {
-      if (!prev.length) return prev
-      setRedoStack((r) => [...r, prev[prev.length - 1]])
-      return prev.slice(0, -1)
-    })
+    if (!history.length) return
+    const op = history[history.length - 1]
+    if (op.kind === 'shape') {
+      setShapes((s) => s.slice(0, -1))
+    } else {
+      setBase(op.prevBase)
+      setShapes(op.prevShapes)
+    }
+    setHistory((h) => h.slice(0, -1))
+    setRedoStack((r) => [...r, op])
   }
   const redo = () => {
-    setRedoStack((r) => {
-      if (!r.length) return r
-      setShapes((s) => [...s, r[r.length - 1]])
-      return r.slice(0, -1)
-    })
+    if (!redoStack.length) return
+    const op = redoStack[redoStack.length - 1]
+    if (op.kind === 'shape') {
+      setShapes((s) => [...s, op.shape])
+    } else {
+      setBase(op.nextBase)
+      setShapes([])
+    }
+    setRedoStack((r) => r.slice(0, -1))
+    setHistory((h) => [...h, op])
   }
+
+  const undoRef = useRef<() => void>(null)
+  const redoRef = useRef<() => void>(null)
+  undoRef.current = undo
+  redoRef.current = redo
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -273,8 +297,8 @@ export default function Editor({ initialImage, onReset }: { initialImage: HTMLIm
       const inField = !!target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')
       if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
         e.preventDefault()
-        if (e.shiftKey) redo()
-        else undo()
+        if (e.shiftKey) redoRef.current?.()
+        else undoRef.current?.()
         return
       }
       if ((e.ctrlKey || e.metaKey) && e.key === 's') {
@@ -359,12 +383,14 @@ export default function Editor({ initialImage, onReset }: { initialImage: HTMLIm
   return (
     <div className="flex h-full flex-col bg-zinc-950 text-zinc-100">
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 border-b border-zinc-800 bg-zinc-900/80 px-2 py-1.5 backdrop-blur sm:px-3 sm:py-2">
-        <div className="flex w-full items-center gap-1 overflow-x-auto sm:w-auto">
+        <div className="flex w-full flex-wrap items-center gap-1 sm:w-auto">
           {TOOLS.map((t) => (
             <button
               key={t.id}
               onClick={() => setTool(t.id)}
               title={`${t.label} (${t.key})`}
+              aria-label={`${t.label} (${t.key})`}
+              aria-pressed={tool === t.id}
               className={`flex h-9 min-w-9 items-center justify-center gap-1 rounded-lg px-2 text-sm font-medium transition ${
                 tool === t.id ? 'bg-blue-600 text-white' : 'text-zinc-300 hover:bg-zinc-800'
               }`}
@@ -406,8 +432,8 @@ export default function Editor({ initialImage, onReset }: { initialImage: HTMLIm
           aria-label="stroke width"
         />
         <div className="mx-1 hidden h-6 w-px bg-zinc-700 sm:block" />
-        <button onClick={undo} className="rounded-lg px-1.5 py-1.5 text-sm text-zinc-300 hover:bg-zinc-800 sm:px-2" title="Undo (Ctrl+Z)">↩<span className="hidden sm:inline"> Undo</span></button>
-        <button onClick={redo} disabled={!redoStack.length} className="rounded-lg px-1.5 py-1.5 text-sm text-zinc-300 hover:bg-zinc-800 disabled:opacity-40 sm:px-2" title="Redo (Ctrl+Shift+Z)">↪</button>
+        <button onClick={undo} disabled={!history.length} aria-label="Undo (Ctrl+Z)" className="rounded-lg px-1.5 py-1.5 text-sm text-zinc-300 hover:bg-zinc-800 disabled:opacity-40 sm:px-2" title="Undo (Ctrl+Z)">↩<span className="hidden sm:inline"> Undo</span></button>
+        <button onClick={redo} disabled={!redoStack.length} aria-label="Redo (Ctrl+Shift+Z)" className="rounded-lg px-1.5 py-1.5 text-sm text-zinc-300 hover:bg-zinc-800 disabled:opacity-40 sm:px-2" title="Redo (Ctrl+Shift+Z)">↪</button>
         <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
           <button onClick={copy} className="rounded-lg bg-zinc-800 px-2.5 py-1.5 text-sm font-medium hover:bg-zinc-700 sm:px-3" title="Copy to clipboard (Ctrl+C)">Copy</button>
           <button onClick={download} className="rounded-lg bg-blue-600 px-2.5 py-1.5 text-sm font-semibold text-white hover:bg-blue-500 sm:px-3" title="Download PNG (Ctrl+S)"><span className="hidden sm:inline">Download </span>PNG</button>
@@ -435,10 +461,11 @@ export default function Editor({ initialImage, onReset }: { initialImage: HTMLIm
                 }
               }}
               placeholder="Type, then Enter"
-              className="absolute rounded border border-blue-500 bg-zinc-900/90 px-2 py-1 text-sm text-white outline-none"
+              className="absolute rounded border border-blue-500 bg-zinc-900/90 px-2 py-1 font-semibold text-white outline-none"
               style={{
                 left: `${(textInput.x / W) * 100}%`,
                 top: `${(textInput.y / H) * 100}%`,
+                fontSize: `${(14 + stroke * 6) * ((canvasRef.current?.getBoundingClientRect().width ?? W) / W)}px`,
               }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') commitText((e.target as HTMLInputElement).value)

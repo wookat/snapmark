@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import Editor from './Editor'
+import Editor, { TOOLS } from './Editor'
 import { track } from './track'
 
 declare const chrome: {
@@ -7,6 +7,8 @@ declare const chrome: {
 } | undefined
 
 const isExtension = typeof chrome !== 'undefined' && !!chrome?.storage && location.protocol === 'chrome-extension:'
+
+const canCaptureScreen = typeof navigator !== 'undefined' && !!navigator.mediaDevices?.getDisplayMedia
 
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -73,8 +75,8 @@ function EditorMockup() {
         <span className="ml-3 hidden rounded-md bg-white px-3 py-0.5 text-[11px] text-zinc-500 ring-1 ring-zinc-200 sm:block">ext.zalize.com</span>
       </div>
       <div className="flex flex-wrap items-center gap-1 border-b border-zinc-100 bg-white px-3 py-2">
-        {['↗', '▭', '◯', '╱', '✎', 'T', '▒', '⤢'].map((t, i) => (
-          <span key={t} className={`flex h-7 w-7 items-center justify-center rounded-lg text-xs ${i === 0 ? 'bg-blue-600 text-white' : 'text-zinc-500'}`}>{t}</span>
+        {TOOLS.map((t, i) => (
+          <span key={t.id} className={`flex h-7 w-7 items-center justify-center rounded-lg text-xs ${i === 0 ? 'bg-blue-600 text-white' : 'text-zinc-500'}`}>{t.icon}</span>
         ))}
         <span className="mx-1 h-5 w-px bg-zinc-200" />
         {['#ef4444', '#f97316', '#22c55e', '#3b82f6'].map((c, i) => (
@@ -108,7 +110,7 @@ function EditorMockup() {
 }
 
 function CompareCell({ v }: { v: string }) {
-  if (v.startsWith('yes:')) return <span className="inline-flex items-center gap-1.5 text-emerald-600"><Icon d={IC.check} className="h-4 w-4 shrink-0" />{v.slice(4)}</span>
+  if (v.startsWith('yes:')) return <span className="inline-flex items-center gap-1.5 text-emerald-700"><Icon d={IC.check} className="h-4 w-4 shrink-0" />{v.slice(4)}</span>
   if (v.startsWith('no:')) return <span className="inline-flex items-center gap-1.5 text-zinc-500"><Icon d={IC.x} className="h-4 w-4 shrink-0" />{v.slice(3)}</span>
   if (v.startsWith('warn:')) return <span className="inline-flex items-center gap-1.5 text-amber-600"><Icon d={IC.warn} className="h-4 w-4 shrink-0" />{v.slice(5)}</span>
   return <span>{v}</span>
@@ -242,14 +244,22 @@ export default function App() {
               }`}
             >
               <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center lg:justify-start">
-                <button
-                  onClick={captureScreen}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-blue-600 px-7 py-3.5 text-[15px] font-bold text-white shadow-lg shadow-blue-600/30 transition hover:bg-blue-500 sm:w-auto"
+                {canCaptureScreen && (
+                  <button
+                    onClick={captureScreen}
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-blue-600 px-7 py-3.5 text-[15px] font-bold text-white shadow-lg shadow-blue-600/30 transition hover:bg-blue-500 sm:w-auto"
+                  >
+                    <Icon d={IC.camera} className="h-5 w-5" />
+                    Capture screen
+                  </button>
+                )}
+                <label
+                  className={
+                    canCaptureScreen
+                      ? 'inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-full border border-zinc-300 bg-white px-7 py-3.5 text-[15px] font-semibold text-zinc-700 transition hover:border-zinc-400 hover:bg-zinc-50 sm:w-auto'
+                      : 'inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-blue-600 px-7 py-3.5 text-[15px] font-bold text-white shadow-lg shadow-blue-600/30 transition hover:bg-blue-500 sm:w-auto'
+                  }
                 >
-                  <Icon d={IC.camera} className="h-5 w-5" />
-                  Capture screen
-                </button>
-                <label className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-full border border-zinc-300 bg-white px-7 py-3.5 text-[15px] font-semibold text-zinc-700 transition hover:border-zinc-400 hover:bg-zinc-50 sm:w-auto">
                   <Icon d={IC.upload} className="h-5 w-5" />
                   Upload image
                   <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFile(e.target.files?.[0] ?? null)} />
@@ -304,10 +314,10 @@ export default function App() {
             </div>
             <div className="rounded-2xl border border-zinc-200 bg-gradient-to-br from-blue-50 to-indigo-50 p-6 sm:p-10">
               <div className="mx-auto flex max-w-sm flex-wrap items-center justify-center gap-2 rounded-2xl bg-white p-4 shadow-lg ring-1 ring-zinc-200/60">
-                {[['↗', 'Arrow'], ['▭', 'Box'], ['◯', 'Ellipse'], ['╱', 'Line'], ['✎', 'Pen'], ['T', 'Text'], ['▒', 'Blur'], ['⤢', 'Crop']].map(([i, l], idx) => (
-                  <span key={l} className={`flex flex-col items-center gap-1 rounded-xl px-3 py-2 text-lg ${idx === 4 ? 'bg-blue-600 text-white' : 'bg-zinc-50 text-zinc-600'}`}>
-                    {i}
-                    <span className="text-[10px] font-medium">{l}</span>
+                {TOOLS.map((t, idx) => (
+                  <span key={t.id} className={`flex flex-col items-center gap-1 rounded-xl px-3 py-2 text-lg ${idx === 0 ? 'bg-blue-600 text-white' : 'bg-zinc-50 text-zinc-600'}`}>
+                    {t.icon}
+                    <span className="text-[10px] font-medium">{t.label}</span>
                   </span>
                 ))}
               </div>
@@ -330,7 +340,7 @@ export default function App() {
                       <div key={k} className="flex items-center justify-between rounded-lg bg-zinc-50 px-3 py-2">
                         <span className="text-zinc-600">{k}</span>
                         {v === 'yes'
-                          ? <span className="inline-flex items-center gap-1 font-semibold text-emerald-600"><Icon d={IC.check} className="h-4 w-4" />Stored</span>
+                          ? <span className="inline-flex items-center gap-1 font-semibold text-emerald-700"><Icon d={IC.check} className="h-4 w-4" />Stored</span>
                           : <span className="inline-flex items-center gap-1 font-semibold text-zinc-500"><Icon d={IC.x} className="h-4 w-4" />Never</span>}
                       </div>
                     ))}
@@ -511,13 +521,21 @@ export default function App() {
             <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">Take your screenshots to the next level</h2>
             <p className="mx-auto mt-4 max-w-xl text-lg text-blue-100">Free, private and instant. Your first annotated screenshot is 10 seconds away.</p>
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <button
-                onClick={captureScreen}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-white px-8 py-3.5 text-[15px] font-bold text-blue-700 shadow-lg transition hover:bg-blue-50 sm:w-auto"
-              >
-                <Icon d={IC.camera} className="h-5 w-5" />
-                Capture screen — it’s free
-              </button>
+              {canCaptureScreen ? (
+                <button
+                  onClick={captureScreen}
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-white px-8 py-3.5 text-[15px] font-bold text-blue-700 shadow-lg transition hover:bg-blue-50 sm:w-auto"
+                >
+                  <Icon d={IC.camera} className="h-5 w-5" />
+                  Capture screen — it’s free
+                </button>
+              ) : (
+                <label className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-white px-8 py-3.5 text-[15px] font-bold text-blue-700 shadow-lg transition hover:bg-blue-50 sm:w-auto">
+                  <Icon d={IC.upload} className="h-5 w-5" />
+                  Upload an image — it’s free
+                  <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFile(e.target.files?.[0] ?? null)} />
+                </label>
+              )}
               <a
                 href="https://github.com/wookat/snapmark/releases"
                 target="_blank"
