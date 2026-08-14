@@ -38,3 +38,16 @@
 
 ## progress
 审查完成（5 条新发现 + 1 条遗留跟踪），进入 fix 阶段。
+
+---
+
+## Verdict（审查员线上复验，asset index-C-Ob94CC.js，2026-08-14）
+
+- R3-1 **PASS**：sample.png / og.png / favicon.svg 实测 `max-age=3600, stale-while-revalidate=86400`；扩展 zip 实为 GitHub releases 外链（307），不经 Worker，站内无 /extension.zip 路径，该子项 N/A 合理。
+- R3-2 **PASS**：线上 HTML 已内联 `<style>`，无 stylesheet link；Lighthouse render-blocking-insight 由 0 → 1，FCP/LCP 1.7s → 1.4s。
+- R3-3 **驳回成立**：同意"无实测掉帧不做预防性优化"，留待第 4 轮移动端实测数据裁决。
+- R3-4 **PASS**：线上 bundle 实测 `system-ui, sans-serif`，Inter 引用清除。
+- R3-5 **PASS**：徽章改 bg-red-700；Lighthouse Accessibility 0.93 → **1.0**。
+- R3-6 维持 A6 追踪，无回归。
+
+复验后 Lighthouse：Performance **1.0** / Accessibility **1.0**。结论：5/5 PASS（1 项合理驳回）。第 3 轮闭环，进入第 4 轮（移动端专项）。
