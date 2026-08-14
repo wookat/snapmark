@@ -34,3 +34,15 @@
 
 ## progress
 审查完成（1×P1 + 4×P2），进入 fix 阶段。
+
+---
+
+## Verdict（审查员线上复验，asset index-CseSzqdH.js，375×667 触摸仿真，2026-08-14）
+
+- R4-1 **PASS**：工具栏 2×5 网格，Crop 不再孤行且可见；工具栏高度 306px → 169px（实测画布上沿以上为工具栏+居中留白）。画布 351×219 为 1200×750 图像等比结果，居中合理（shots/v4-editor.png）。
+- R4-2 **PASS**：Text 输入框 computed font-size 实测 16px。
+- R4-3 **PASS**：全页按钮扫描无 <32px 触摸目标（颜色 swatch 32px、Undo/Redo/✕ 36px）。
+- R4-4 **PASS（带遗留）**：hero 的 Ctrl+V 提示在 pointer:coarse 下已隐藏；但 Features 区卡片标题「Paste with Ctrl+V」在触摸设备仍可见——属营销文案非操作提示，不改判 FAIL，转入第 6 轮（信息架构与文案）待处理。
+- R4-5 **PASS（代码级）**：copy() 已改为手势内同步构造 ClipboardItem(Promise<Blob>)；Chrome 生产实测正常，Safari 真机不可及维持"留待真机抽验"标注。
+
+结论：5/5 PASS（1 项带遗留转第 6 轮）。第 4 轮闭环，进入第 5 轮（错误路径与边界专项）。
