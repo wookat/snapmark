@@ -92,12 +92,22 @@ const SMALL_FEATURES = [
   { icon: IC.zap, title: 'Instant, no install', desc: 'The web app loads in under a second. No sign-up.' },
 ]
 
+const COMPARE_ROWS = [
+  ['Actively maintained', 'yes:Yes', 'warn:Last update Jul 2024'],
+  ['Screenshots stay local', 'yes:Never uploaded', 'no:Uploaded to prnt.sc'],
+  ['Blur / hide sensitive info', 'yes:Pixelate tool', 'no:Not available'],
+  ['Web version (no install)', 'yes:ext.zalize.com', 'no:Extension only'],
+  ['Works on mobile', 'yes:Yes', 'no:No'],
+  ['Manifest V3', 'yes:Yes', 'no:MV2 (deprecated)'],
+  ['Free, no account', 'yes:Yes', 'yes:Yes'],
+]
+
 const FAQS = [
   { q: 'Is SnapMark really free?', a: 'Yes. No account, no watermark, no limits, no “Pro” upsell. The web app and the Chrome extension are free and open source.' },
   { q: 'Where are my screenshots stored?', a: 'Only on your device. All processing happens in your browser with the Canvas API — images are never uploaded to any server.' },
   { q: 'How is this different from Lightshot?', a: 'Lightshot uploads every screenshot to prnt.sc where links have repeatedly been found publicly discoverable, and its extension (still Manifest V2) has not been updated since July 2024. SnapMark keeps everything local, is actively maintained, and adds blur/pixelate for sensitive info.' },
   { q: 'Do I need to install anything?', a: 'No. The web app works instantly in any modern browser, on desktop and mobile. The optional Chrome extension adds one-click capture of the current tab.' },
-  { q: 'Can I capture a specific area?', a: 'Capture your screen, then use the Crop tool to trim to the exact area — or blur everything you don’t want to show.' },
+  { q: 'Can I capture a specific area?', a: 'Not at capture time — SnapMark captures the full screen, window or tab you pick, and you then use the Crop tool to trim to the exact area (same result in one extra click). On mobile, upload or paste an image and crop it the same way.' },
 ]
 
 function EditorMockup() {
@@ -429,7 +439,7 @@ export default function App() {
               <p className="mb-3 text-sm font-bold uppercase tracking-wider text-blue-600">Capture anywhere</p>
               <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Capture, paste or drop</h2>
               <p className="mt-4 text-lg leading-relaxed text-zinc-500">
-                Grab your screen directly on desktop, paste from the clipboard with Ctrl+V, or drag &amp; drop any
+                Grab your screen directly on desktop, paste straight from your clipboard, or drag &amp; drop any
                 image — on any device, including your phone. No install required.
               </p>
               <ul className="mt-6 space-y-3 text-[15px] text-zinc-600">
@@ -442,7 +452,7 @@ export default function App() {
               <div className="mx-auto grid max-w-sm gap-3">
                 {[
                   [IC.camera, 'Capture screen', 'Pick a screen, window or tab'],
-                  [IC.clipboard, 'Paste with Ctrl+V', 'Straight from your clipboard'],
+                  [IC.clipboard, 'Paste from clipboard', 'Straight from your clipboard'],
                   [IC.upload, 'Drop or upload', 'Any image file, any device'],
                 ].map(([icon, title, sub]) => (
                   <div key={title} className="flex items-center gap-3.5 rounded-2xl bg-white p-4 shadow-md ring-1 ring-zinc-200/60">
@@ -482,8 +492,8 @@ export default function App() {
             The Lightshot extension (2,000,000+ users) hasn’t been updated since July 2024, still runs deprecated
             Manifest V2, and uploads your screenshots to prnt.sc.
           </p>
-          <div className="mt-10 overflow-x-auto rounded-2xl border border-zinc-200 shadow-sm">
-            <table className="w-full min-w-[560px] text-left text-sm">
+          <div className="mt-10 hidden overflow-hidden rounded-2xl border border-zinc-200 shadow-sm sm:block">
+            <table className="w-full text-left text-sm">
               <thead>
                 <tr className="border-b border-zinc-200 bg-zinc-50 text-zinc-500">
                   <th className="px-5 py-3.5 font-semibold"><span className="sr-only">Feature</span></th>
@@ -492,15 +502,7 @@ export default function App() {
                 </tr>
               </thead>
               <tbody className="text-zinc-700">
-                {[
-                  ['Actively maintained', 'yes:Yes', 'warn:Last update Jul 2024'],
-                  ['Screenshots stay local', 'yes:Never uploaded', 'no:Uploaded to prnt.sc'],
-                  ['Blur / hide sensitive info', 'yes:Pixelate tool', 'no:Not available'],
-                  ['Web version (no install)', 'yes:ext.zalize.com', 'no:Extension only'],
-                  ['Works on mobile', 'yes:Yes', 'no:No'],
-                  ['Manifest V3', 'yes:Yes', 'no:MV2 (deprecated)'],
-                  ['Free, no account', 'yes:Yes', 'yes:Yes'],
-                ].map(([k, a, b]) => (
+                {COMPARE_ROWS.map(([k, a, b]) => (
                   <tr key={k} className="border-b border-zinc-100 last:border-0">
                     <td className="px-5 py-3.5 font-medium text-zinc-500">{k}</td>
                     <td className="px-5 py-3.5 font-medium"><CompareCell v={a} /></td>
@@ -509,6 +511,17 @@ export default function App() {
                 ))}
               </tbody>
             </table>
+          </div>
+          <div className="mt-10 space-y-3 sm:hidden">
+            {COMPARE_ROWS.map(([k, a, b]) => (
+              <div key={k} className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
+                <p className="font-semibold text-zinc-900">{k}</p>
+                <div className="mt-2 space-y-1.5 text-sm">
+                  <p className="flex items-baseline gap-2"><span className="w-20 shrink-0 font-bold text-blue-600">SnapMark</span><span className="font-medium"><CompareCell v={a} /></span></p>
+                  <p className="flex items-baseline gap-2"><span className="w-20 shrink-0 font-semibold text-zinc-500">Lightshot</span><CompareCell v={b} /></p>
+                </div>
+              </div>
+            ))}
           </div>
         </section>
 
@@ -652,13 +665,13 @@ export default function App() {
             </p>
             <p className="mt-2">
               <span className="font-semibold text-zinc-500">More from ZALIZE:</span>{' '}
-              <a href="https://qr.zalize.com" className="hover:text-zinc-600">HonestQR</a>
+              <a href="https://qr.zalize.com" target="_blank" rel="noreferrer" className="hover:text-zinc-600">HonestQR</a>
               {' · '}
-              <a href="https://prompter.zalize.com" className="hover:text-zinc-600">PromptCue</a>
+              <a href="https://prompter.zalize.com" target="_blank" rel="noreferrer" className="hover:text-zinc-600">PromptCue</a>
               {' · '}
-              <a href="https://pdf.zalize.com" className="hover:text-zinc-600">PDF Suite</a>
+              <a href="https://pdf.zalize.com" target="_blank" rel="noreferrer" className="hover:text-zinc-600">PDF Suite</a>
               {' · '}
-              <a href="https://scribe.zalize.com" className="hover:text-zinc-600">ScribeFlow</a>
+              <a href="https://scribe.zalize.com" target="_blank" rel="noreferrer" className="hover:text-zinc-600">ScribeFlow</a>
             </p>
             <p className="mt-2">© {new Date().getFullYear()} SnapMark · zalize.com</p>
           </div>
