@@ -425,6 +425,15 @@ export default function Editor({ initialImage, initialNotice, onReset }: { initi
   return (
     <div className="flex h-full flex-col bg-zinc-950 text-zinc-100">
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 border-b border-zinc-800 bg-zinc-900/80 px-2 py-1.5 backdrop-blur sm:px-3 sm:py-2">
+        <button
+          onClick={confirmReset}
+          title="SnapMark — start a new image"
+          className="hidden items-center gap-2 rounded-lg px-1.5 py-1 hover:bg-zinc-800 sm:flex"
+        >
+          <span className="flex h-6 w-6 items-center justify-center rounded-md bg-blue-600 text-xs font-bold text-white">S</span>
+          <span className="hidden text-sm font-bold tracking-tight lg:inline">SnapMark</span>
+        </button>
+        <div className="mx-1 hidden h-6 w-px bg-zinc-700 sm:block" />
         <div className="grid w-full grid-cols-5 gap-1 sm:flex sm:w-auto sm:flex-wrap sm:items-center">
           {TOOLS.map((t) => (
             <button
@@ -479,7 +488,7 @@ export default function Editor({ initialImage, initialNotice, onReset }: { initi
         <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
           <button onClick={copy} className="rounded-lg bg-zinc-800 px-2.5 py-1.5 text-sm font-medium hover:bg-zinc-700 sm:px-3" title="Copy to clipboard (Ctrl+C)">Copy</button>
           <button onClick={download} className="rounded-lg bg-blue-600 px-2.5 py-1.5 text-sm font-semibold text-white hover:bg-blue-500 sm:px-3" title="Download PNG (Ctrl+S)"><span className="hidden sm:inline">Download </span>PNG</button>
-          <button onClick={confirmReset} aria-label="New image" className="h-9 min-w-9 rounded-lg px-1.5 text-sm text-zinc-400 hover:bg-zinc-800 sm:px-2" title="New image">✕</button>
+          <button onClick={confirmReset} aria-label="New image" className="h-9 min-w-9 rounded-lg px-1.5 text-sm text-zinc-400 hover:bg-zinc-800 sm:px-2" title="New image">＋<span className="hidden sm:inline"> New</span></button>
         </div>
       </div>
       <div ref={wrapRef} className="relative flex flex-1 items-center justify-center overflow-auto bg-zinc-950 p-3">
