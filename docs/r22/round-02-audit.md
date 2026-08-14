@@ -45,3 +45,17 @@
 
 ## progress
 审查完成，进入 fix 阶段。
+
+---
+
+## Verdict（审查员线上复验，asset index-cBqfsCz→实测 index-cBqFscCz.js，2026-08-14）
+
+- R2-1 **PASS**：✕ 弹 confirm("Discard this image and all annotations?")，取消后留在编辑器；脏状态下导航触发真实 beforeunload 对话框（Playwright 实测拦截成功，URL 未跳转）。
+- R2-2 **PASS**：Blur 现对合成结果采样，覆盖区域内标注（box 边框）被真实像素化而非擦除；绘制草稿有可见边框（shots/v2-blur.png）。
+- R2-3 **PASS**：选 .txt → role=alert "Only image files are supported (PNG, JPEG, WebP, GIF, SVG…)"。
+- R2-4 **PASS**：右下角 Text 提交后文字 clamp 在图片内（shots/v2-textedge.png），不再溢出裁切。
+- R2-5 **PASS**：100×100 SVG 栅格化为 1024×1024。
+- R2-6 **PASS**：8000×6000（48MP）自动降采样为 4619×3464（≈16MP）；降采样提示未在 3s 后捕获到（可能为瞬时 toast），不影响判定。
+- R2-7 **PASS**：下载文件名实测 `snapmark-2026-08-14-015305.png`。
+
+结论：7/7 PASS，附带修复（commitText 历史栈）未发现回归（undo 行为正常）。第 2 轮闭环，进入第 3 轮（性能专项）。
