@@ -6,7 +6,9 @@
     "directory": "./dist",
     "binding": "ASSETS",
     // Single-page site: unknown paths get a real 404 (avoids SEO soft-404s).
-    "not_found_handling": "404-page"
+    "not_found_handling": "404-page",
+    // Route asset requests through the worker so it can set security/cache headers.
+    "run_worker_first": true
   },
   "routes": [
     { "pattern": "ext.zalize.com", "custom_domain": true }
