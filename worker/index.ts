@@ -13,7 +13,13 @@ const ALLOWED_ACTIONS = new Set([
 
 const app = new Hono<{ Bindings: Bindings }>()
 
-app.use('/api/*', cors())
+app.use(
+  '/api/*',
+  cors({
+    origin: (origin) =>
+      origin === 'https://ext.zalize.com' || origin.startsWith('chrome-extension://') ? origin : 'https://ext.zalize.com',
+  }),
+)
 
 app.post('/api/track', async (c) => {
   try {
@@ -21,10 +27,14 @@ app.post('/api/track', async (c) => {
     if (!ALLOWED_ACTIONS.has(action)) return c.json({ ok: false }, 400)
     const day = new Date().toISOString().slice(0, 10)
     const keys = [`total:${action}`, `day:${day}:${action}`]
-    for (const key of keys) {
-      const cur = parseInt((await c.env.METRICS.get(key)) ?? '0', 10)
-      await c.env.METRICS.put(key, String(cur + 1))
-    }
+    c.executionCtx.waitUntil(
+      (async () => {
+        for (const key of keys) {
+          const cur = parseInt((await c.env.METRICS.get(key)) ?? '0', 10)
+          await c.env.METRICS.put(key, String(cur + 1))
+        }
+      })(),
+    )
     return c.json({ ok: true })
   } catch {
     return c.json({ ok: false }, 400)
@@ -32,10 +42,12 @@ app.post('/api/track', async (c) => {
 })
 
 app.get('/api/stats', async (c) => {
+  const actions = [...ALLOWED_ACTIONS]
+  const values = await Promise.all(actions.map((a) => c.env.METRICS.get(`total:${a}`)))
   const out: Record<string, number> = {}
-  for (const action of ALLOWED_ACTIONS) {
-    out[action] = parseInt((await c.env.METRICS.get(`total:${action}`)) ?? '0', 10)
-  }
+  actions.forEach((a, i) => {
+    out[a] = parseInt(values[i] ?? '0', 10)
+  })
   return c.json(out)
 })
 
@@ -52,6 +64,24 @@ app.get('/sitemap.xml', (c) =>
   ),
 )
 
-app.get('*', (c) => c.env.ASSETS.fetch(c.req.raw))
+const SECURITY_HEADERS: Record<string, string> = {
+  'strict-transport-security': 'max-age=31536000; includeSubDomains',
+  'x-content-type-options': 'nosniff',
+  'x-frame-options': 'DENY',
+  'referrer-policy': 'strict-origin-when-cross-origin',
+  'content-security-policy':
+    "default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'",
+}
+
+app.get('*', async (c) => {
+  const res = await c.env.ASSETS.fetch(c.req.raw)
+  const headers = new Headers(res.headers)
+  if (new URL(c.req.url).pathname.startsWith('/assets/')) {
+    headers.set('cache-control', 'public, max-age=31536000, immutable')
+  } else {
+    for (const [k, v] of Object.entries(SECURITY_HEADERS)) headers.set(k, v)
+  }
+  return new Response(res.body, { status: res.status, headers })
+})
 
 export default app
