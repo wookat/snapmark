@@ -387,8 +387,9 @@ export default function Editor({ initialImage, onReset }: { initialImage: HTMLIm
 
   const copy = async () => {
     try {
-      const blob = await exportBlob()
-      await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })])
+      // ClipboardItem must be constructed synchronously within the user gesture
+      // (Safari rejects clipboard writes after an await); it accepts a Promise<Blob>.
+      await navigator.clipboard.write([new ClipboardItem({ 'image/png': exportBlob() })])
       track('copy')
       showToast('Copied to clipboard')
     } catch {
@@ -412,7 +413,7 @@ export default function Editor({ initialImage, onReset }: { initialImage: HTMLIm
   return (
     <div className="flex h-full flex-col bg-zinc-950 text-zinc-100">
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 border-b border-zinc-800 bg-zinc-900/80 px-2 py-1.5 backdrop-blur sm:px-3 sm:py-2">
-        <div className="flex w-full flex-wrap items-center gap-1 sm:w-auto">
+        <div className="grid w-full grid-cols-5 gap-1 sm:flex sm:w-auto sm:flex-wrap sm:items-center">
           {TOOLS.map((t) => (
             <button
               key={t.id}
@@ -436,11 +437,11 @@ export default function Editor({ initialImage, onReset }: { initialImage: HTMLIm
               key={c}
               onClick={() => setColor(c)}
               aria-label={`color ${c}`}
-              className={`h-5 w-5 rounded-full border-2 transition sm:h-6 sm:w-6 ${color === c ? 'scale-110 border-white' : 'border-transparent'}`}
+              className={`h-8 w-8 rounded-full border-2 transition sm:h-6 sm:w-6 ${color === c ? 'scale-110 border-white' : 'border-transparent'}`}
               style={{ backgroundColor: c }}
             />
           ))}
-          <label className="relative ml-0.5 h-5 w-5 cursor-pointer rounded-full sm:h-6 sm:w-6" title="Custom color">
+          <label className="relative ml-0.5 h-8 w-8 cursor-pointer rounded-full sm:h-6 sm:w-6" title="Custom color">
             <span className="absolute inset-0 rounded-full" style={{ background: 'conic-gradient(#ef4444,#eab308,#22c55e,#3b82f6,#a855f7,#ef4444)' }} aria-hidden="true" />
             <input
               type="color"
@@ -461,12 +462,12 @@ export default function Editor({ initialImage, onReset }: { initialImage: HTMLIm
           aria-label="stroke width"
         />
         <div className="mx-1 hidden h-6 w-px bg-zinc-700 sm:block" />
-        <button onClick={undo} disabled={!history.length} aria-label="Undo (Ctrl+Z)" className="rounded-lg px-1.5 py-1.5 text-sm text-zinc-300 hover:bg-zinc-800 disabled:opacity-40 sm:px-2" title="Undo (Ctrl+Z)">↩<span className="hidden sm:inline"> Undo</span></button>
-        <button onClick={redo} disabled={!redoStack.length} aria-label="Redo (Ctrl+Shift+Z)" className="rounded-lg px-1.5 py-1.5 text-sm text-zinc-300 hover:bg-zinc-800 disabled:opacity-40 sm:px-2" title="Redo (Ctrl+Shift+Z)">↪</button>
+        <button onClick={undo} disabled={!history.length} aria-label="Undo (Ctrl+Z)" className="h-9 min-w-9 rounded-lg px-1.5 text-sm text-zinc-300 hover:bg-zinc-800 disabled:opacity-40 sm:px-2" title="Undo (Ctrl+Z)">↩<span className="hidden sm:inline"> Undo</span></button>
+        <button onClick={redo} disabled={!redoStack.length} aria-label="Redo (Ctrl+Shift+Z)" className="h-9 min-w-9 rounded-lg px-1.5 text-sm text-zinc-300 hover:bg-zinc-800 disabled:opacity-40 sm:px-2" title="Redo (Ctrl+Shift+Z)">↪</button>
         <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
           <button onClick={copy} className="rounded-lg bg-zinc-800 px-2.5 py-1.5 text-sm font-medium hover:bg-zinc-700 sm:px-3" title="Copy to clipboard (Ctrl+C)">Copy</button>
           <button onClick={download} className="rounded-lg bg-blue-600 px-2.5 py-1.5 text-sm font-semibold text-white hover:bg-blue-500 sm:px-3" title="Download PNG (Ctrl+S)"><span className="hidden sm:inline">Download </span>PNG</button>
-          <button onClick={confirmReset} aria-label="New image" className="rounded-lg px-1.5 py-1.5 text-sm text-zinc-400 hover:bg-zinc-800 sm:px-2" title="New image">✕</button>
+          <button onClick={confirmReset} aria-label="New image" className="h-9 min-w-9 rounded-lg px-1.5 text-sm text-zinc-400 hover:bg-zinc-800 sm:px-2" title="New image">✕</button>
         </div>
       </div>
       <div ref={wrapRef} className="relative flex flex-1 items-center justify-center overflow-auto bg-zinc-950 p-3">
@@ -495,7 +496,8 @@ export default function Editor({ initialImage, onReset }: { initialImage: HTMLIm
                 left: `${Math.min((textInput.x / W) * 100, 70)}%`,
                 top: `${Math.min((textInput.y / H) * 100, 92)}%`,
                 maxWidth: `${100 - Math.min((textInput.x / W) * 100, 70)}%`,
-                fontSize: `${(14 + stroke * 6) * ((canvasRef.current?.getBoundingClientRect().width ?? W) / W)}px`,
+                // Sub-16px inputs trigger iOS Safari auto-zoom on focus; committed text is still drawn at canvas scale.
+                fontSize: `${Math.max(16, (14 + stroke * 6) * ((canvasRef.current?.getBoundingClientRect().width ?? W) / W))}px`,
               }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') commitText((e.target as HTMLInputElement).value)

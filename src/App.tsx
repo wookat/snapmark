@@ -308,7 +308,7 @@ export default function App() {
                 </p>
               )}
               <p className="mt-3 text-center text-sm text-zinc-500 lg:text-left">
-                …or paste with <kbd className="rounded border border-zinc-300 bg-white px-1.5 py-0.5 text-xs font-semibold text-zinc-500">Ctrl</kbd>+<kbd className="rounded border border-zinc-300 bg-white px-1.5 py-0.5 text-xs font-semibold text-zinc-500">V</kbd>, drag &amp; drop anywhere, or{' '}
+                …or <span className="pointer-coarse:hidden">paste with <kbd className="rounded border border-zinc-300 bg-white px-1.5 py-0.5 text-xs font-semibold text-zinc-500">Ctrl</kbd>+<kbd className="rounded border border-zinc-300 bg-white px-1.5 py-0.5 text-xs font-semibold text-zinc-500">V</kbd>, </span>drag &amp; drop anywhere, or{' '}
                 <button onClick={openSample} className="font-semibold text-blue-600 underline decoration-blue-300 underline-offset-2 transition hover:text-blue-500">try a sample image</button>
               </p>
             </div>
@@ -604,19 +604,19 @@ export default function App() {
             </div>
             <div>
               <p className="text-sm font-bold text-zinc-900">Product</p>
-              <ul className="mt-3 space-y-2 text-sm text-zinc-500">
-                <li><a href="#features" className="hover:text-zinc-900">Features</a></li>
-                <li><a href="#compare" className="hover:text-zinc-900">Compare vs Lightshot</a></li>
-                <li><a href="#extension" className="hover:text-zinc-900">Chrome extension</a></li>
-                <li><a href="#faq" className="hover:text-zinc-900">FAQ</a></li>
+              <ul className="mt-2 space-y-0.5 text-sm text-zinc-500">
+                <li><a href="#features" className="inline-block py-1.5 hover:text-zinc-900">Features</a></li>
+                <li><a href="#compare" className="inline-block py-1.5 hover:text-zinc-900">Compare vs Lightshot</a></li>
+                <li><a href="#extension" className="inline-block py-1.5 hover:text-zinc-900">Chrome extension</a></li>
+                <li><a href="#faq" className="inline-block py-1.5 hover:text-zinc-900">FAQ</a></li>
               </ul>
             </div>
             <div>
               <p className="text-sm font-bold text-zinc-900">Open source</p>
-              <ul className="mt-3 space-y-2 text-sm text-zinc-500">
-                <li><a href="https://github.com/wookat/snapmark" target="_blank" rel="noreferrer" className="hover:text-zinc-900">Source code</a></li>
-                <li><a href="https://github.com/wookat/snapmark/releases" target="_blank" rel="noreferrer" className="hover:text-zinc-900">Releases</a></li>
-                <li><a href="https://github.com/wookat/snapmark/issues" target="_blank" rel="noreferrer" className="hover:text-zinc-900">Report an issue</a></li>
+              <ul className="mt-2 space-y-0.5 text-sm text-zinc-500">
+                <li><a href="https://github.com/wookat/snapmark" target="_blank" rel="noreferrer" className="inline-block py-1.5 hover:text-zinc-900">Source code</a></li>
+                <li><a href="https://github.com/wookat/snapmark/releases" target="_blank" rel="noreferrer" className="inline-block py-1.5 hover:text-zinc-900">Releases</a></li>
+                <li><a href="https://github.com/wookat/snapmark/issues" target="_blank" rel="noreferrer" className="inline-block py-1.5 hover:text-zinc-900">Report an issue</a></li>
               </ul>
             </div>
             <div>
