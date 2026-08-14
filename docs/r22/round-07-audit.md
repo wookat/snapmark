@@ -35,3 +35,15 @@
 
 ## progress
 审查完成（5×P2，无 P0/P1；线上行为无回归风险项），进入 fix 阶段。
+
+---
+
+## Verdict（审查员线上复验，2026-08-14）
+
+- R7-1 **PASS**：main 上 App.tsx 102 行（状态路由）、Landing.tsx 554 行、lib/image.ts 43 行；线上落地页 8 个 h2 区块完整渲染，三入口正常。
+- R7-2 **PASS**：Op 改为 `{kind:'crop'; rect; prevShapes}` + `rebuildBase` 重放；线上嵌套裁剪 1200×750→650×450→270×220，3×undo 逐级精确还原（270→650→1200→1200 去箭头），3×redo 回到 270×220，导出 PNG 实测 270×220，零 JS 异常（shots/v7-editor.png）。
+- R7-3 **PASS（部分修，接受驳回理由）**：`day:` key 实装 90 天 TTL；AE 迁移驳回理由成立（为 P2 计数器引入 API token 密钥面违反勿增实体，当前精度损失可忽略）。挂账保留：流量/精度要求上升时迁移 AE。
+- R7-4 **PASS**：track.ts 收敛为单 fetch（15 行）；线上 POST /api/track 200、/api/stats 正常计数。
+- R7-5 **PASS**：四条 ref 管道收敛为单个 handlersRef；线上 Ctrl+Z / Ctrl+Shift+Z / Ctrl+S 全部生效。
+
+结论：5/5 PASS（R7-3 为接受的部分修复+挂账）。第 7 轮闭环，进入第 8 轮（SEO/发现性专项）。
