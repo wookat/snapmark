@@ -41,6 +41,8 @@ app.post('/api/track', async (c) => {
   }
 })
 
+app.all('/api/track', (c) => c.json({ ok: false, error: 'method not allowed' }, 405, { Allow: 'POST' }))
+
 app.get('/api/stats', async (c) => {
   const actions = [...ALLOWED_ACTIONS]
   const values = await Promise.all(actions.map((a) => c.env.METRICS.get(`total:${a}`)))
@@ -50,6 +52,8 @@ app.get('/api/stats', async (c) => {
   })
   return c.json(out)
 })
+
+app.all('/api/stats', (c) => c.json({ error: 'method not allowed' }, 405, { Allow: 'GET' }))
 
 const INDEXNOW_KEY = 'a7c1f4e29b8d4d63a0f5e8c2d9b71a44'
 app.get(`/${INDEXNOW_KEY}.txt`, (c) => c.text(INDEXNOW_KEY))
