@@ -17,6 +17,6 @@ writeFileSync(indexFile, built.replace(marker, `<div id="root">${html}</div>`))
 const lastmod = new Date().toISOString().slice(0, 10)
 writeFileSync(
   new URL('../dist/sitemap.xml', import.meta.url),
-  `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n  <url><loc>https://ext.zalize.com/</loc><lastmod>${lastmod}</lastmod></url>\n</urlset>\n`,
+  `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n  <url><loc>https://ext.zalize.com/</loc><lastmod>${lastmod}</lastmod></url>\n  <url><loc>https://ext.zalize.com/privacy</loc><lastmod>${lastmod}</lastmod></url>\n</urlset>\n`,
 )
 console.log(`prerendered ${html.length} chars into dist/index.html; sitemap lastmod=${lastmod}`)
