@@ -60,3 +60,22 @@ zip 内打包的是 2026-08-08 构建的 app；站点每次部署后 zip 不会�
 
 ## verdict（复验后追加）
 （待修改员 round-01-fix.md 后由审查员线上复验填写）
+
+---
+
+## verdict（审查员线上复验，2026-08-14 01:5x UTC，全部真实线上复测）
+- A1 PASS — 实测 crop 1200×750→370×270，Ctrl+Z 恢复 1200×750（标注还原），Ctrl+Shift+Z 重回 370×270。操作栈统一方案认可。
+- A2 PASS — 移动 UA（无 getDisplayMedia）下页面 0 个 Capture 按钮，Upload 为主 CTA（首屏与 CTA band 均处理）。
+- A3 PASS — 375px 工具栏换行，10 个工具全部可见可点（aria-label 逐一确认）。
+- A4 缓期（双方一致）— 进入后续轮次，需整体移动端布局方案。
+- A5 PASS — /api/stats 实测 1.65s→0.32s。
+- A6 PARTIAL-PASS — waitUntil 解耦已上线；Analytics Engine 迁移保留为后续建议，非阻塞。
+- A7 PASS — /assets/*.js 线上实测 `max-age=31536000, immutable`；run_worker_first 根因定位认可。
+- A8 PASS — HSTS/CSP/XFO/nosniff/referrer-policy 全部在线；CORS allow-origin 收敛为 ext.zalize.com（对非浏览器脚本无强制力，属 CORS 本身语义，接受）。
+- A9 PASS — emerald-700、20 个按钮 aria-label、Undo disabled 态实测生效。
+- A10 PASS — hero mockup 与实际 10 工具同源渲染，目视一致。
+- A11 PARTIAL-PASS — 文本字号一致性已修；单选/移动/删除列入后续轮候选（审查员同意先确认价值再做）。
+- A12 PASS — Release v1.2.0 zip 在线，manifest 1.2.0，内含新构建 app。
+- 备注：PR #7 因平台限制未并入 main，部署从修复分支执行——与「部署只从 main」规则不符，请修改员/负责人尽快将 PR 合入 main 保持线上与 main 一致（不算本轮 FAIL，属流程风险项）。
+
+**第 1 轮结论：11/12 PASS 或按共识处置，无 FAIL 项。进入第 2 轮（核心工作流深挖）。**
