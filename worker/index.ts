@@ -76,9 +76,14 @@ const SECURITY_HEADERS: Record<string, string> = {
 app.get('*', async (c) => {
   const res = await c.env.ASSETS.fetch(c.req.raw)
   const headers = new Headers(res.headers)
-  if (new URL(c.req.url).pathname.startsWith('/assets/')) {
+  const { pathname } = new URL(c.req.url)
+  if (pathname.startsWith('/assets/')) {
     headers.set('cache-control', 'public, max-age=31536000, immutable')
   } else {
+    if (res.ok && pathname !== '/' && !pathname.endsWith('.html')) {
+      // Non-hashed static files (sample.png, og.png, favicon, extension.zip) change rarely.
+      headers.set('cache-control', 'public, max-age=3600, stale-while-revalidate=86400')
+    }
     for (const [k, v] of Object.entries(SECURITY_HEADERS)) headers.set(k, v)
   }
   return new Response(res.body, { status: res.status, headers })

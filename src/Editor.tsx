@@ -21,6 +21,9 @@ type Op =
   | { kind: 'shape'; shape: Shape }
   | { kind: 'crop'; prevBase: Base; prevShapes: Shape[]; nextBase: HTMLCanvasElement }
 
+// Site never loads a webfont; system-ui keeps exports consistent with what the user sees.
+const CANVAS_FONT = 'system-ui, sans-serif'
+
 const COLORS = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#a855f7', '#ffffff', '#18181b']
 
 export const TOOLS: { id: Tool; label: string; icon: string; key: string }[] = [
@@ -94,7 +97,7 @@ function drawShape(ctx: CanvasRenderingContext2D, s: Shape) {
       ctx.arc(x1, y1, r, 0, Math.PI * 2)
       ctx.fill()
       ctx.fillStyle = s.color === '#ffffff' ? '#18181b' : '#ffffff'
-      ctx.font = `700 ${Math.round(r * 1.1)}px Inter, sans-serif`
+      ctx.font = `700 ${Math.round(r * 1.1)}px ${CANVAS_FONT}`
       ctx.textAlign = 'center'
       ctx.textBaseline = 'middle'
       ctx.fillText(s.text ?? '1', x1, y1 + r * 0.05)
@@ -105,7 +108,7 @@ function drawShape(ctx: CanvasRenderingContext2D, s: Shape) {
     case 'text':
       if (s.text) {
         const size = 14 + s.width * 6
-        ctx.font = `600 ${size}px Inter, sans-serif`
+        ctx.font = `600 ${size}px ${CANVAS_FONT}`
         ctx.textBaseline = 'top'
         const tw = ctx.measureText(s.text).width
         const tx = Math.max(0, Math.min(Math.min(x1, x2), ctx.canvas.width - tw))

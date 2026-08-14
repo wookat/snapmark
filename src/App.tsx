@@ -129,7 +129,7 @@ function EditorMockup() {
           <path d="M56 8 C40 20 28 34 14 50" stroke="currentColor" strokeWidth="4" strokeLinecap="round" />
           <path d="M14 50 L16 38 M14 50 L26 47" stroke="currentColor" strokeWidth="4" strokeLinecap="round" />
         </svg>
-        <span className="absolute bottom-8 right-8 rounded-md bg-red-500 px-2 py-1 text-xs font-bold text-white shadow sm:right-12">Fix this!</span>
+        <span className="absolute bottom-8 right-8 rounded-md bg-red-700 px-2 py-1 text-xs font-bold text-white shadow sm:right-12">Fix this!</span>
         <span className="absolute bottom-8 left-8 h-8 w-24 rounded-md bg-zinc-400/60 backdrop-blur-sm sm:left-12" style={{ filter: 'blur(0.5px)', backgroundImage: 'repeating-linear-gradient(45deg, rgba(255,255,255,.35) 0 4px, transparent 4px 8px)' }} />
       </div>
     </div>
