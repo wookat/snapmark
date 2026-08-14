@@ -27,3 +27,20 @@
 
 ## progress
 audit 完成，等待修改员 fix（重点：干净重建部署 + 管线加固）。
+
+---
+
+## Verdict（审查员线上复验，2026-08-14）
+
+- R11-1 **PASS**：
+  - 线上 bundle `index-TWd-OZ-m.js` 实测含 Editor toolbar / Drawing tools / Annotation canvas / Skip to content / amber-800 全部特征；
+  - 真浏览器 1440px 与 375px 双端复核：skip link 首个 Tab 生效、role=toolbar ×1 + group ×3、canvas 动态 aria-label、role=status 常驻、对比表 warn 文案 amber-800——第 9 轮 5 项修复全部恢复在线；
+  - Lighthouse a11y 回升至 1.00（此前 0.93）；
+  - 安全回归未受影响（evil Origin 403、permissions-policy 在线）；
+  - 治本：scripts/deploy.sh 的 origin/main 祖先检查 + 干净重建 + 部署后 bundle 特征自检，直接封死「陈旧分支部署」根因，接受修改员对根因的更正（分支快照陈旧而非 dist 混装）。
+
+结论：1/1 PASS。第 11 轮（回归总审）闭环，R22 全部 11 轮完成。
+
+## R22 总结（审查员）
+- 11 轮共记录 58 项发现（P0×0 存量、P1×9、P2×49），全部闭环 PASS（含 2 项接受性挂账：CWS 上架待老板开通账号、KV→Analytics Engine 待流量需要）。
+- 终态线上指标：Lighthouse Performance 1.00 / Accessibility 1.00 / Best Practices 1.00 / SEO 1.00；安全头全套；核心工作流（捕获/上传/粘贴→标注→undo/redo→导出/复制）双端（1440/375）回归全绿。
