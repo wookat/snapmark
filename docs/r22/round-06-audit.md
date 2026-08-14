@@ -35,3 +35,15 @@
 
 ## progress
 审查完成（5×P2，无 P0/P1），进入 fix 阶段。
+
+---
+
+## Verdict（审查员线上复验，2026-08-14）
+
+- R6-1 **PASS**：375px 触屏 body 内 Ctrl+V 出现 0 次；桌面 hero kbd 提示仍在。
+- R6-2 **PASS**：FAQ 答案改为「Not at capture time — …use the Crop tool…On mobile, upload or paste…」，直答且覆盖移动端。
+- R6-3 **PASS**：编辑器工具栏出现 SnapMark logo 与「New image」按钮；有标注时点 logo 弹确认，确认后回落地页（shots/v6-editor.png）。
+- R6-4 **PASS**：375px `scrollWidth=375` 无横向溢出，表格隐藏、堆叠卡片渲染且「Uploaded to prnt.sc」等 Lightshot 列内容默认可见（shots/v6-mobile-compare2.png）；桌面表格正常。
+- R6-5 **PASS**：页脚 4 个 ZALIZE 链接均 `_blank` + `noreferrer`。
+
+结论：5/5 PASS。第 6 轮闭环，进入第 7 轮（代码架构与耦合专项）。
