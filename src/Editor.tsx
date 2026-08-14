@@ -442,7 +442,7 @@ export default function Editor({ initialImage, initialNotice, onReset }: { initi
 
   return (
     <div className="flex h-full flex-col bg-zinc-950 text-zinc-100">
-      <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 border-b border-zinc-800 bg-zinc-900/80 px-2 py-1.5 backdrop-blur sm:px-3 sm:py-2">
+      <div role="toolbar" aria-label="Editor toolbar" className="flex flex-wrap items-center gap-x-2 gap-y-1.5 border-b border-zinc-800 bg-zinc-900/80 px-2 py-1.5 backdrop-blur sm:px-3 sm:py-2">
         <button
           onClick={confirmReset}
           title="SnapMark — start a new image"
@@ -452,7 +452,7 @@ export default function Editor({ initialImage, initialNotice, onReset }: { initi
           <span className="hidden text-sm font-bold tracking-tight lg:inline">SnapMark</span>
         </button>
         <div className="mx-1 hidden h-6 w-px bg-zinc-700 sm:block" />
-        <div className="grid w-full grid-cols-5 gap-1 sm:flex sm:w-auto sm:flex-wrap sm:items-center">
+        <div role="group" aria-label="Drawing tools" className="grid w-full grid-cols-5 gap-1 sm:flex sm:w-auto sm:flex-wrap sm:items-center">
           {TOOLS.map((t) => (
             <button
               key={t.id}
@@ -470,7 +470,7 @@ export default function Editor({ initialImage, initialNotice, onReset }: { initi
           ))}
         </div>
         <div className="mx-1 hidden h-6 w-px bg-zinc-700 sm:block" />
-        <div className="flex items-center gap-1">
+        <div role="group" aria-label="Color and stroke" className="flex items-center gap-1">
           {COLORS.map((c) => (
             <button
               key={c}
@@ -503,7 +503,7 @@ export default function Editor({ initialImage, initialNotice, onReset }: { initi
         <div className="mx-1 hidden h-6 w-px bg-zinc-700 sm:block" />
         <button onClick={undo} disabled={!history.length} aria-label="Undo (Ctrl+Z)" className="h-9 min-w-9 rounded-lg px-1.5 text-sm text-zinc-300 hover:bg-zinc-800 disabled:opacity-40 sm:px-2" title="Undo (Ctrl+Z)">↩<span className="hidden sm:inline"> Undo</span></button>
         <button onClick={redo} disabled={!redoStack.length} aria-label="Redo (Ctrl+Shift+Z)" className="h-9 min-w-9 rounded-lg px-1.5 text-sm text-zinc-300 hover:bg-zinc-800 disabled:opacity-40 sm:px-2" title="Redo (Ctrl+Shift+Z)">↪</button>
-        <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
+        <div role="group" aria-label="Export and file actions" className="ml-auto flex items-center gap-1.5 sm:gap-2">
           <button onClick={copy} className="rounded-lg bg-zinc-800 px-2.5 py-1.5 text-sm font-medium hover:bg-zinc-700 sm:px-3" title="Copy to clipboard (Ctrl+C)">Copy</button>
           <button onClick={download} className="rounded-lg bg-blue-600 px-2.5 py-1.5 text-sm font-semibold text-white hover:bg-blue-500 sm:px-3" title="Download PNG (Ctrl+S)"><span className="hidden sm:inline">Download </span>PNG</button>
           <button onClick={confirmReset} aria-label="New image" className="h-9 min-w-9 rounded-lg px-1.5 text-sm text-zinc-400 hover:bg-zinc-800 sm:px-2" title="New image">＋<span className="hidden sm:inline"> New</span></button>
@@ -518,6 +518,8 @@ export default function Editor({ initialImage, initialNotice, onReset }: { initi
             onPointerDown={onPointerDown}
             onPointerMove={onPointerMove}
             onPointerUp={onPointerUp}
+            role="img"
+            aria-label={`Annotation canvas, ${W}×${H} pixels, ${shapes.length} annotation${shapes.length === 1 ? '' : 's'}`}
             className={`touch-none rounded-lg shadow-2xl ring-1 ring-zinc-800 ${extremeAspect ? '' : 'max-h-[calc(100vh-8rem)] max-w-full'}`}
             style={{ cursor: 'crosshair', ...(extremeAspect ? { width: W * displayScale, height: H * displayScale, maxWidth: 'none', imageRendering: displayScale > 1 ? ('pixelated' as const) : undefined } : {}) }}
           />
@@ -552,11 +554,11 @@ export default function Editor({ initialImage, initialNotice, onReset }: { initi
             />
           )}
         </div>
-        {toast && (
-          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 rounded-full bg-zinc-800 px-4 py-2 text-sm text-white shadow-lg ring-1 ring-zinc-700">
-            {toast}
-          </div>
-        )}
+        <div role="status" className="absolute bottom-6 left-1/2 -translate-x-1/2">
+          {toast && (
+            <div className="rounded-full bg-zinc-800 px-4 py-2 text-sm text-white shadow-lg ring-1 ring-zinc-700">{toast}</div>
+          )}
+        </div>
       </div>
     </div>
   )

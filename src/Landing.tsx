@@ -104,7 +104,7 @@ function EditorMockup() {
 function CompareCell({ v }: { v: string }) {
   if (v.startsWith('yes:')) return <span className="inline-flex items-center gap-1.5 text-emerald-700"><Icon d={IC.check} className="h-4 w-4 shrink-0" />{v.slice(4)}</span>
   if (v.startsWith('no:')) return <span className="inline-flex items-center gap-1.5 text-zinc-500"><Icon d={IC.x} className="h-4 w-4 shrink-0" />{v.slice(3)}</span>
-  if (v.startsWith('warn:')) return <span className="inline-flex items-center gap-1.5 text-amber-600"><Icon d={IC.warn} className="h-4 w-4 shrink-0" />{v.slice(5)}</span>
+  if (v.startsWith('warn:')) return <span className="inline-flex items-center gap-1.5 text-amber-800"><Icon d={IC.warn} className="h-4 w-4 shrink-0 text-amber-600" />{v.slice(5)}</span>
   return <span>{v}</span>
 }
 
@@ -139,6 +139,12 @@ export default function Landing({
         onFile(e.dataTransfer.files[0] ?? null)
       }}
     >
+      <a
+        href="#main"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-full focus:bg-blue-600 focus:px-4 focus:py-2 focus:text-sm focus:font-bold focus:text-white"
+      >
+        Skip to content
+      </a>
       {/* Header */}
       <header className="sticky top-0 z-40 border-b border-zinc-100 bg-white/80 backdrop-blur-lg">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
@@ -161,7 +167,7 @@ export default function Landing({
         </div>
       </header>
 
-      <main>
+      <main id="main">
         {/* Hero */}
         <section className="mx-auto grid max-w-6xl items-center gap-10 px-4 pb-16 pt-12 sm:px-6 lg:grid-cols-2 lg:gap-14 lg:pb-24 lg:pt-20">
           <div className="text-center lg:text-left">
