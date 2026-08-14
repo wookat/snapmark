@@ -23,15 +23,22 @@ function loadImage(src: string): Promise<HTMLImageElement> {
 const MAX_PIXELS = 16_000_000
 // SVGs without explicit dimensions rasterize tiny; upscale small ones for a usable canvas.
 const MIN_SVG_EDGE = 1024
+// Small raster images (icons) get integer nearest-neighbor upscaling so they are annotatable.
+const MIN_RASTER_EDGE = 256
 
 async function normalizeImage(img: HTMLImageElement, isSvg: boolean): Promise<{ img: HTMLImageElement; note?: string }> {
   const w = img.naturalWidth || img.width
   const h = img.naturalHeight || img.height
   let scale = 1
+  let pixelated = false
   let note: string | undefined
   if (isSvg && Math.max(w, h) < MIN_SVG_EDGE) {
     scale = MIN_SVG_EDGE / Math.max(w, h)
     note = `SVG rasterized at ${Math.round(w * scale)}×${Math.round(h * scale)}`
+  } else if (!isSvg && Math.max(w, h) < MIN_RASTER_EDGE) {
+    scale = Math.ceil(MIN_RASTER_EDGE / Math.max(w, h))
+    pixelated = true
+    note = `Small image upscaled ×${scale} to ${w * scale}×${h * scale}`
   } else if (w * h > MAX_PIXELS) {
     scale = Math.sqrt(MAX_PIXELS / (w * h))
     note = `Large image scaled to ${Math.round(w * scale)}×${Math.round(h * scale)} for compatibility`
@@ -41,7 +48,8 @@ async function normalizeImage(img: HTMLImageElement, isSvg: boolean): Promise<{ 
   c.width = Math.round(w * scale)
   c.height = Math.round(h * scale)
   const ctx = c.getContext('2d')!
-  ctx.imageSmoothingQuality = 'high'
+  if (pixelated) ctx.imageSmoothingEnabled = false
+  else ctx.imageSmoothingQuality = 'high'
   ctx.drawImage(img, 0, 0, c.width, c.height)
   return { img: await loadImage(c.toDataURL('image/png')), note }
 }
@@ -147,6 +155,7 @@ export default function App() {
   const [image, setImage] = useState<HTMLImageElement | null>(null)
   const [dragOver, setDragOver] = useState(false)
   const [notice, setNotice] = useState('')
+  const [editorNotice, setEditorNotice] = useState<string | undefined>(undefined)
 
   useEffect(() => {
     track('visit')
@@ -171,7 +180,7 @@ export default function App() {
     loadImage(url)
       .then((img) => normalizeImage(img, file.type === 'image/svg+xml'))
       .then(({ img, note }) => {
-        if (note) setNotice(note)
+        setEditorNotice(file.type === 'image/gif' ? 'Animated GIF — only the first frame is editable' : note)
         setImage(img)
         track('open_image')
       })
@@ -219,7 +228,16 @@ export default function App() {
   }
 
   if (image) {
-    return <Editor initialImage={image} onReset={() => setImage(null)} />
+    return (
+      <Editor
+        initialImage={image}
+        initialNotice={editorNotice}
+        onReset={() => {
+          setImage(null)
+          setEditorNotice(undefined)
+        }}
+      />
+    )
   }
 
   return (

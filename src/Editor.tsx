@@ -139,7 +139,7 @@ function drawShape(ctx: CanvasRenderingContext2D, s: Shape) {
   }
 }
 
-export default function Editor({ initialImage, onReset }: { initialImage: HTMLImageElement; onReset: () => void }) {
+export default function Editor({ initialImage, initialNotice, onReset }: { initialImage: HTMLImageElement; initialNotice?: string; onReset: () => void }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const wrapRef = useRef<HTMLDivElement>(null)
   const [base, setBase] = useState<HTMLImageElement | HTMLCanvasElement>(initialImage)
@@ -157,6 +157,10 @@ export default function Editor({ initialImage, onReset }: { initialImage: HTMLIm
 
   const W = base.width
   const H = base.height
+  // Extreme aspect ratios (e.g. full-page screenshots) collapse to a hairline when
+  // fit to the viewport; show them at a legible scale inside the scrollable area instead.
+  const extremeAspect = Math.max(W / H, H / W) > 20
+  const displayScale = extremeAspect ? Math.max(1, Math.ceil(40 / Math.min(W, H))) : 1
 
   const redraw = useCallback(() => {
     const canvas = canvasRef.current
@@ -247,13 +251,16 @@ export default function Editor({ initialImage, onReset }: { initialImage: HTMLIm
     if (!d) return
     draftRef.current = null
     setDraft(null)
-    if (Math.abs(d.x2 - d.x1) < 3 && Math.abs(d.y2 - d.y1) < 3 && d.type !== 'pen' && d.type !== 'counter') return
+    if (Math.abs(d.x2 - d.x1) < 3 && Math.abs(d.y2 - d.y1) < 3 && d.type !== 'pen' && d.type !== 'counter' && d.type !== 'crop') return
     if (d.type === 'crop') {
       const cx = Math.round(Math.min(d.x1, d.x2))
       const cy = Math.round(Math.min(d.y1, d.y2))
       const cw = Math.round(Math.abs(d.x2 - d.x1))
       const ch = Math.round(Math.abs(d.y2 - d.y1))
-      if (cw < 10 || ch < 10) return
+      if (cw < 10 || ch < 10) {
+        showToast('Selection too small to crop')
+        return
+      }
       const flat = document.createElement('canvas')
       flat.width = W
       flat.height = H
@@ -366,10 +373,15 @@ export default function Editor({ initialImage, onReset }: { initialImage: HTMLIm
       c.toBlob((b) => resolve(b!), 'image/png')
     })
 
-  const showToast = (msg: string) => {
+  const showToast = (msg: string, ms = 2000) => {
     setToast(msg)
-    setTimeout(() => setToast(''), 2000)
+    setTimeout(() => setToast(''), ms)
   }
+
+  useEffect(() => {
+    if (initialNotice) showToast(initialNotice, 4000)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const downloadRef = useRef<() => void>(null)
   const copyRef = useRef<() => void>(null)
@@ -471,7 +483,7 @@ export default function Editor({ initialImage, onReset }: { initialImage: HTMLIm
         </div>
       </div>
       <div ref={wrapRef} className="relative flex flex-1 items-center justify-center overflow-auto bg-zinc-950 p-3">
-        <div className="relative max-h-full max-w-full">
+        <div className={extremeAspect ? 'relative' : 'relative max-h-full max-w-full'}>
           <canvas
             ref={canvasRef}
             width={W}
@@ -479,8 +491,8 @@ export default function Editor({ initialImage, onReset }: { initialImage: HTMLIm
             onPointerDown={onPointerDown}
             onPointerMove={onPointerMove}
             onPointerUp={onPointerUp}
-            className="max-h-[calc(100vh-8rem)] max-w-full touch-none rounded-lg shadow-2xl ring-1 ring-zinc-800"
-            style={{ cursor: 'crosshair' }}
+            className={`touch-none rounded-lg shadow-2xl ring-1 ring-zinc-800 ${extremeAspect ? '' : 'max-h-[calc(100vh-8rem)] max-w-full'}`}
+            style={{ cursor: 'crosshair', ...(extremeAspect ? { width: W * displayScale, height: H * displayScale, maxWidth: 'none', imageRendering: displayScale > 1 ? ('pixelated' as const) : undefined } : {}) }}
           />
           {textInput && (
             <input
