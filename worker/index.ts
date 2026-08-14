@@ -31,7 +31,8 @@ app.post('/api/track', async (c) => {
       (async () => {
         for (const key of keys) {
           const cur = parseInt((await c.env.METRICS.get(key)) ?? '0', 10)
-          await c.env.METRICS.put(key, String(cur + 1))
+          // day: keys expire after 90 days so per-day counters never accumulate forever.
+          await c.env.METRICS.put(key, String(cur + 1), key.startsWith('day:') ? { expirationTtl: 60 * 60 * 24 * 90 } : undefined)
         }
       })(),
     )

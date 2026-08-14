@@ -19,7 +19,7 @@ type Base = HTMLImageElement | HTMLCanvasElement
 
 type Op =
   | { kind: 'shape'; shape: Shape }
-  | { kind: 'crop'; prevBase: Base; prevShapes: Shape[]; nextBase: HTMLCanvasElement }
+  | { kind: 'crop'; rect: { x: number; y: number; w: number; h: number }; prevShapes: Shape[] }
 
 // Site never loads a webfont; system-ui keeps exports consistent with what the user sees.
 const CANVAS_FONT = 'system-ui, sans-serif'
@@ -271,7 +271,7 @@ export default function Editor({ initialImage, initialNotice, onReset }: { initi
       next.width = cw
       next.height = ch
       next.getContext('2d')!.drawImage(flat, cx, cy, cw, ch, 0, 0, cw, ch)
-      setHistory((h) => [...h, { kind: 'crop', prevBase: base, prevShapes: shapes, nextBase: next }])
+      setHistory((h) => [...h, { kind: 'crop', rect: { x: cx, y: cy, w: cw, h: ch }, prevShapes: shapes }])
       setBase(next)
       setShapes([])
       setRedoStack([])
@@ -282,13 +282,37 @@ export default function Editor({ initialImage, initialNotice, onReset }: { initi
     setRedoStack([])
   }
 
+  // Crop ops store only the rect + shapes; the base for any history point is
+  // reconstructed by replaying the crop chain from the original image. This keeps
+  // memory O(1) in crop count (undo/redo is low-frequency, so CPU replay is fine).
+  const rebuildBase = (ops: Op[]): Base => {
+    let b: Base = initialImage
+    for (const op of ops) {
+      if (op.kind !== 'crop') continue
+      const bw = b instanceof HTMLImageElement ? b.naturalWidth || b.width : b.width
+      const bh = b instanceof HTMLImageElement ? b.naturalHeight || b.height : b.height
+      const flat = document.createElement('canvas')
+      flat.width = bw
+      flat.height = bh
+      const fctx = flat.getContext('2d')!
+      fctx.drawImage(b, 0, 0)
+      for (const s of op.prevShapes) drawShape(fctx, s)
+      const next = document.createElement('canvas')
+      next.width = op.rect.w
+      next.height = op.rect.h
+      next.getContext('2d')!.drawImage(flat, op.rect.x, op.rect.y, op.rect.w, op.rect.h, 0, 0, op.rect.w, op.rect.h)
+      b = next
+    }
+    return b
+  }
+
   const undo = () => {
     if (!history.length) return
     const op = history[history.length - 1]
     if (op.kind === 'shape') {
       setShapes((s) => s.slice(0, -1))
     } else {
-      setBase(op.prevBase)
+      setBase(rebuildBase(history.slice(0, -1)))
       setShapes(op.prevShapes)
     }
     setHistory((h) => h.slice(0, -1))
@@ -300,17 +324,12 @@ export default function Editor({ initialImage, initialNotice, onReset }: { initi
     if (op.kind === 'shape') {
       setShapes((s) => [...s, op.shape])
     } else {
-      setBase(op.nextBase)
+      setBase(rebuildBase([...history, op]))
       setShapes([])
     }
     setRedoStack((r) => r.slice(0, -1))
     setHistory((h) => [...h, op])
   }
-
-  const undoRef = useRef<() => void>(null)
-  const redoRef = useRef<() => void>(null)
-  undoRef.current = undo
-  redoRef.current = redo
 
   const dirty = history.length > 0 || shapes.length > 0
 
@@ -334,18 +353,18 @@ export default function Editor({ initialImage, initialNotice, onReset }: { initi
       const inField = !!target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
         e.preventDefault()
-        if (e.shiftKey) redoRef.current?.()
-        else undoRef.current?.()
+        if (e.shiftKey) handlersRef.current.redo()
+        else handlersRef.current.undo()
         return
       }
       if ((e.ctrlKey || e.metaKey) && e.key === 's') {
         e.preventDefault()
-        downloadRef.current?.()
+        handlersRef.current.download()
         return
       }
       if ((e.ctrlKey || e.metaKey) && e.key === 'c' && !inField && !window.getSelection()?.toString()) {
         e.preventDefault()
-        copyRef.current?.()
+        handlersRef.current.copy()
         return
       }
       if (e.key === 'Escape' && draftRef.current) {
@@ -383,9 +402,6 @@ export default function Editor({ initialImage, initialNotice, onReset }: { initi
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const downloadRef = useRef<() => void>(null)
-  const copyRef = useRef<() => void>(null)
-
   const download = async () => {
     const blob = await exportBlob()
     const a = document.createElement('a')
@@ -409,8 +425,10 @@ export default function Editor({ initialImage, initialNotice, onReset }: { initi
     }
   }
 
-  downloadRef.current = download
-  copyRef.current = copy
+  // Single latest-handlers ref for the [] keyboard effect: one assignment point,
+  // so adding a shortcut can't silently capture stale state.
+  const handlersRef = useRef({ undo, redo, download, copy })
+  handlersRef.current = { undo, redo, download, copy }
 
   const commitText = (value: string) => {
     if (textInput && value.trim()) {
