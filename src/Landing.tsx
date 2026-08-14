@@ -51,7 +51,7 @@ const COMPARE_ROWS = [
 
 const FAQS = [
   { q: 'Is SnapMark really free?', a: 'Yes. No account, no watermark, no limits, no “Pro” upsell. The web app and the Chrome extension are free and open source.' },
-  { q: 'Where are my screenshots stored?', a: 'Only on your device. All processing happens in your browser with the Canvas API — images are never uploaded to any server.' },
+  { q: 'Where are my screenshots stored?', a: 'Only on your device. All processing happens in your browser with the Canvas API — images are never uploaded to any server. The only network request is an anonymous usage counter (an action name like “copy” — never image or page content), which you can verify in the open source code.' },
   { q: 'How is this different from Lightshot?', a: 'Lightshot uploads every screenshot to prnt.sc where links have repeatedly been found publicly discoverable, and its extension (still Manifest V2) has not been updated since July 2024. SnapMark keeps everything local, is actively maintained, and adds blur/pixelate for sensitive info.' },
   { q: 'Do I need to install anything?', a: 'No. The web app works instantly in any modern browser, on desktop and mobile. The optional Chrome extension adds one-click capture of the current tab.' },
   { q: 'Can I capture a specific area?', a: 'Not at capture time — SnapMark captures the full screen, window or tab you pick, and you then use the Crop tool to trim to the exact area (same result in one extra click). On mobile, upload or paste an image and crop it the same way.' },

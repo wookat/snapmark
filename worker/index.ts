@@ -21,8 +21,31 @@ app.use(
   }),
 )
 
+const isTrustedOrigin = (origin: string) => origin === 'https://ext.zalize.com' || origin.startsWith('chrome-extension://')
+
+// Best-effort per-isolate rate limit for the write path; counters are
+// non-billing metrics, so this only needs to blunt bulk flooding.
+const RATE_LIMIT = 30
+const rateBuckets = new Map<string, { count: number; windowStart: number }>()
+function rateLimited(ip: string): boolean {
+  const now = Date.now()
+  const bucket = rateBuckets.get(ip)
+  if (!bucket || now - bucket.windowStart > 60_000) {
+    if (rateBuckets.size > 10_000) rateBuckets.clear()
+    rateBuckets.set(ip, { count: 1, windowStart: now })
+    return false
+  }
+  bucket.count++
+  return bucket.count > RATE_LIMIT
+}
+
 app.post('/api/track', async (c) => {
   try {
+    // CORS only stops browsers from reading responses; block cross-site writes server-side too.
+    const origin = c.req.header('origin')
+    if (origin && !isTrustedOrigin(origin)) return c.json({ ok: false }, 403)
+    const ip = c.req.header('cf-connecting-ip') ?? 'unknown'
+    if (rateLimited(ip)) return c.json({ ok: false }, 429)
     const { action } = await c.req.json<{ action: string }>()
     if (!ALLOWED_ACTIONS.has(action)) return c.json({ ok: false }, 400)
     const day = new Date().toISOString().slice(0, 10)
@@ -51,7 +74,7 @@ app.get('/api/stats', async (c) => {
   actions.forEach((a, i) => {
     out[a] = parseInt(values[i] ?? '0', 10)
   })
-  return c.json(out)
+  return c.json(out, 200, { 'cache-control': 'public, max-age=60' })
 })
 
 app.all('/api/stats', (c) => c.json({ error: 'method not allowed' }, 405, { Allow: 'GET' }))
@@ -66,6 +89,8 @@ const SECURITY_HEADERS: Record<string, string> = {
   'x-content-type-options': 'nosniff',
   'x-frame-options': 'DENY',
   'referrer-policy': 'strict-origin-when-cross-origin',
+  // display-capture intentionally left enabled: the app's own Capture screen uses it.
+  'permissions-policy': 'camera=(), microphone=(), geolocation=(), payment=()',
   'content-security-policy':
     "default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'",
 }

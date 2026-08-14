@@ -20,8 +20,14 @@ export default function App() {
     if (isExtension && chrome?.storage) {
       chrome.storage.local.get(['pendingCapture'], (r) => {
         if (r.pendingCapture) {
-          loadImage(r.pendingCapture).then(setImage)
-          chrome.storage!.local.remove(['pendingCapture'])
+          loadImage(r.pendingCapture)
+            .then((img) => normalizeImage(img, false))
+            .then(({ img, note }) => {
+              setEditorNotice(note)
+              setImage(img)
+            })
+            .catch(() => setNotice('Could not load the captured screenshot — please capture again.'))
+            .finally(() => chrome?.storage?.local.remove(['pendingCapture']))
         }
       })
     }
