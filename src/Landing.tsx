@@ -529,6 +529,9 @@ export default function Landing({
                 All image processing happens locally. We collect anonymous usage counters only — no personal data, no
                 cookies, no images.
               </p>
+              <p className="mt-2 text-sm">
+                <a href="/privacy" className="inline-block py-1.5 text-zinc-500 hover:text-zinc-900">Privacy policy</a>
+              </p>
             </div>
           </div>
           <div className="mt-10 border-t border-zinc-200 pt-6 text-xs leading-relaxed text-zinc-500">
