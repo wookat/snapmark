@@ -35,3 +35,15 @@
 
 ## progress
 审查完成（5×P2，无 P0/P1——错误路径整体健壮），进入 fix 阶段。
+
+---
+
+## Verdict（审查员线上复验，2026-08-14）
+
+- R5-1 **PASS**：16×16 → 画布 256×256，toast「Small image upscaled ×16 to 256×256」（shots/v5-16.png）。
+- R5-2 **PASS**：4000×10 显示为 16000×40（×4 放大）且置于横向滚动区，不再是发丝线（shots/v5-wide.png）。
+- R5-3 **PASS**：sample 图上 5px 裁剪拖拽 → toast「Selection too small to crop」。
+- R5-4 **PASS**：PUT /api/track → 405 + `allow: POST`；DELETE /api/stats → 405。
+- R5-5 **PASS**：anim.gif → toast「Animated GIF — only the first frame is editable」。附带的 initialNotice 系统性修复（加载提示从落地页迁至编辑器 toast）经 R5-1/R5-5 复验确认生效。
+
+结论：5/5 PASS。第 5 轮闭环，进入第 6 轮（信息架构与文案专项）。
