@@ -498,7 +498,7 @@ export default function Editor({ initialImage, initialNotice, onReset }: { initi
 
   return (
     <div className="flex h-full flex-col bg-zinc-950 text-zinc-100">
-      <div role="toolbar" aria-label="Editor toolbar" className="flex flex-wrap items-center gap-x-2 gap-y-1.5 border-b border-zinc-800 bg-zinc-900/80 px-2 py-1.5 backdrop-blur sm:px-3 sm:py-2">
+      <div role="toolbar" aria-label="Editor toolbar" className="relative z-20 flex flex-wrap items-center gap-x-2 gap-y-1.5 border-b border-zinc-800 bg-zinc-900/80 px-2 py-1.5 backdrop-blur sm:px-3 sm:py-2">
         <button
           onClick={confirmReset}
           title="SnapMark — start a new image"

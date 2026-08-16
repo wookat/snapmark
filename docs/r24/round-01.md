@@ -60,7 +60,13 @@ A = Annotely，B = SnapMark（我方）。我方 5 胜 1 负，唯一输掉维�
 
 ## 4. 部署与线上复测
 
-（合并 PR 后从 main 部署，复测结果回填于此）
+- PR：https://github.com/wookat/snapmark/pull/21（已合并 main）。
+- 部署：main 分支 `npm run build` + `wrangler deploy`，版本 d48dd39b-dfc8-47cc-ab83-5675d7625afb，自定义域 ext.zalize.com。
+- 线上复测（2026-08-16）：
+  - Lighthouse：Perf 100 / A11y 100 / BP 100 / SEO 100；FCP 1.0s、LCP 1.0s、TBT 0ms、CLS 0.03（`/home/ubuntu/r24/lh-live-r1.json`）。
+  - 1440px：Magnify 圈选、Note 气泡、导出菜单在线可用（`live-editor-1440.png`）。
+  - 375px：画布贴顶、6 列带标签工具栏、Copy/PNG 常驻（`live-editor-375.png`）。
+  - 核心流程：首页 → sample image → 标注（zoom/note）→ 导出菜单，全程走通。
 
 ## 5. 复赛
 
