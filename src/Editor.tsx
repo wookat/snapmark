@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { track } from './track'
 
-type Tool = 'arrow' | 'rect' | 'ellipse' | 'line' | 'pen' | 'highlight' | 'text' | 'counter' | 'blur' | 'crop'
+type Tool = 'arrow' | 'rect' | 'ellipse' | 'line' | 'pen' | 'highlight' | 'text' | 'note' | 'counter' | 'blur' | 'zoom' | 'crop'
 
 interface Shape {
   type: Tool
@@ -36,6 +36,8 @@ export const TOOLS: { id: Tool; label: string; icon: string; key: string }[] = [
   { id: 'text', label: 'Text', icon: 'T', key: '7' },
   { id: 'counter', label: 'Counter', icon: '①', key: '8' },
   { id: 'blur', label: 'Blur', icon: '▒', key: '9' },
+  { id: 'zoom', label: 'Magnify', icon: '⌕', key: 'z' },
+  { id: 'note', label: 'Note', icon: '🗨︎', key: 'n' },
   { id: 'crop', label: 'Crop', icon: '⤤', key: '0' },
 ]
 
@@ -105,6 +107,53 @@ function drawShape(ctx: CanvasRenderingContext2D, s: Shape) {
       ctx.textBaseline = 'alphabetic'
       break
     }
+    case 'note': {
+      if (!s.text) break
+      const size = 14 + s.width * 4
+      ctx.font = `600 ${size}px ${CANVAS_FONT}`
+      const padX = size * 0.6
+      const padY = size * 0.4
+      const tw = ctx.measureText(s.text).width
+      const bw2 = tw + padX * 2
+      const bh2 = size + padY * 2
+      const bx2 = Math.max(0, Math.min(Math.min(x1, x2), ctx.canvas.width - bw2))
+      const by2 = Math.max(0, Math.min(Math.min(y1, y2), ctx.canvas.height - bh2))
+      const r2 = Math.min(10, bh2 / 2)
+      ctx.save()
+      ctx.shadowColor = 'rgba(0,0,0,0.35)'
+      ctx.shadowBlur = 8
+      ctx.shadowOffsetY = 2
+      ctx.beginPath()
+      ctx.roundRect(bx2, by2, bw2, bh2, r2)
+      ctx.fill()
+      ctx.restore()
+      ctx.fillStyle = s.color === '#ffffff' || s.color === '#eab308' ? '#18181b' : '#ffffff'
+      ctx.textBaseline = 'middle'
+      ctx.fillText(s.text, bx2 + padX, by2 + bh2 / 2 + size * 0.05)
+      ctx.textBaseline = 'alphabetic'
+      break
+    }
+    case 'zoom': {
+      const r = Math.max(24, Math.hypot(x2 - x1, y2 - y1))
+      const zf = 2
+      const sr = r / zf
+      const tmp = document.createElement('canvas')
+      const side = Math.max(1, Math.ceil(sr * 2))
+      tmp.width = side
+      tmp.height = side
+      tmp.getContext('2d')!.drawImage(ctx.canvas, x1 - sr, y1 - sr, sr * 2, sr * 2, 0, 0, side, side)
+      ctx.save()
+      ctx.beginPath()
+      ctx.arc(x1, y1, r, 0, Math.PI * 2)
+      ctx.clip()
+      ctx.drawImage(tmp, 0, 0, side, side, x1 - r, y1 - r, r * 2, r * 2)
+      ctx.restore()
+      ctx.beginPath()
+      ctx.arc(x1, y1, r, 0, Math.PI * 2)
+      ctx.lineWidth = Math.max(2, s.width)
+      ctx.stroke()
+      break
+    }
     case 'text':
       if (s.text) {
         const size = 14 + s.width * 6
@@ -150,7 +199,8 @@ export default function Editor({ initialImage, initialNotice, onReset }: { initi
   const [color, setColor] = useState(COLORS[0])
   const [stroke, setStroke] = useState(4)
   const [draft, setDraft] = useState<Shape | null>(null)
-  const [textInput, setTextInput] = useState<{ x: number; y: number } | null>(null)
+  const [textInput, setTextInput] = useState<{ x: number; y: number; note?: boolean } | null>(null)
+  const [exportMenu, setExportMenu] = useState(false)
   const [toast, setToast] = useState('')
   const draftRef = useRef<Shape | null>(null)
   const textMountRef = useRef(0)
@@ -215,9 +265,9 @@ export default function Editor({ initialImage, initialNotice, onReset }: { initi
   const onPointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
     if (textInput) return
     const p = canvasPoint(e)
-    if (tool === 'text') {
+    if (tool === 'text' || tool === 'note') {
       e.preventDefault()
-      setTextInput({ x: p.x, y: p.y })
+      setTextInput({ x: p.x, y: p.y, note: tool === 'note' })
       return
     }
     e.currentTarget.setPointerCapture(e.pointerId)
@@ -251,7 +301,7 @@ export default function Editor({ initialImage, initialNotice, onReset }: { initi
     if (!d) return
     draftRef.current = null
     setDraft(null)
-    if (Math.abs(d.x2 - d.x1) < 3 && Math.abs(d.y2 - d.y1) < 3 && d.type !== 'pen' && d.type !== 'counter' && d.type !== 'crop') return
+    if (Math.abs(d.x2 - d.x1) < 3 && Math.abs(d.y2 - d.y1) < 3 && d.type !== 'pen' && d.type !== 'counter' && d.type !== 'zoom' && d.type !== 'crop') return
     if (d.type === 'crop') {
       const cx = Math.round(Math.min(d.x1, d.x2))
       const cy = Math.round(Math.min(d.y1, d.y2))
@@ -381,15 +431,19 @@ export default function Editor({ initialImage, initialNotice, onReset }: { initi
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
-  const exportBlob = (): Promise<Blob> =>
+  const exportBlob = (mime: string = 'image/png'): Promise<Blob> =>
     new Promise((resolve) => {
       const c = document.createElement('canvas')
       c.width = W
       c.height = H
       const ctx = c.getContext('2d')!
+      if (mime === 'image/jpeg') {
+        ctx.fillStyle = '#ffffff'
+        ctx.fillRect(0, 0, W, H)
+      }
       ctx.drawImage(base, 0, 0)
       for (const s of shapes) drawShape(ctx, s)
-      c.toBlob((b) => resolve(b!), 'image/png')
+      c.toBlob((b) => resolve(b!), mime, 0.92)
     })
 
   const showToast = (msg: string, ms = 2000) => {
@@ -402,15 +456,17 @@ export default function Editor({ initialImage, initialNotice, onReset }: { initi
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const download = async () => {
-    const blob = await exportBlob()
+  const download = async (format: 'png' | 'jpeg' | 'webp' = 'png') => {
+    setExportMenu(false)
+    const blob = await exportBlob(`image/${format}`)
+    const ext = format === 'jpeg' ? 'jpg' : format
     const a = document.createElement('a')
     a.href = URL.createObjectURL(blob)
-    a.download = `snapmark-${new Date().toISOString().slice(0, 19).replace('T', '-').replaceAll(':', '')}.png`
+    a.download = `snapmark-${new Date().toISOString().slice(0, 19).replace('T', '-').replaceAll(':', '')}.${ext}`
     a.click()
     URL.revokeObjectURL(a.href)
     track('download')
-    showToast('PNG downloaded')
+    showToast(`${ext.toUpperCase()} downloaded`)
   }
 
   const copy = async () => {
@@ -432,7 +488,7 @@ export default function Editor({ initialImage, initialNotice, onReset }: { initi
 
   const commitText = (value: string) => {
     if (textInput && value.trim()) {
-      const s: Shape = { type: 'text', x1: textInput.x, y1: textInput.y, x2: textInput.x, y2: textInput.y, color, width: stroke, text: value.trim() }
+      const s: Shape = { type: textInput.note ? 'note' : 'text', x1: textInput.x, y1: textInput.y, x2: textInput.x, y2: textInput.y, color, width: stroke, text: value.trim() }
       setShapes((prev) => [...prev, s])
       setHistory((h) => [...h, { kind: 'shape', shape: s }])
       setRedoStack([])
@@ -452,7 +508,7 @@ export default function Editor({ initialImage, initialNotice, onReset }: { initi
           <span className="hidden text-sm font-bold tracking-tight lg:inline">SnapMark</span>
         </button>
         <div className="mx-1 hidden h-6 w-px bg-zinc-700 sm:block" />
-        <div role="group" aria-label="Drawing tools" className="grid w-full grid-cols-5 gap-1 sm:flex sm:w-auto sm:flex-wrap sm:items-center">
+        <div role="group" aria-label="Drawing tools" className="grid w-full grid-cols-6 gap-1 sm:flex sm:w-auto sm:flex-wrap sm:items-center">
           {TOOLS.map((t) => (
             <button
               key={t.id}
@@ -460,12 +516,13 @@ export default function Editor({ initialImage, initialNotice, onReset }: { initi
               title={`${t.label} (${t.key})`}
               aria-label={`${t.label} (${t.key})`}
               aria-pressed={tool === t.id}
-              className={`flex h-9 min-w-9 items-center justify-center gap-1 rounded-lg px-2 text-sm font-medium transition ${
+              className={`flex h-11 min-w-9 flex-col items-center justify-center rounded-lg px-1 text-sm font-medium transition sm:h-9 sm:flex-row sm:gap-1 sm:px-2 ${
                 tool === t.id ? 'bg-blue-600 text-white' : 'text-zinc-300 hover:bg-zinc-800'
               }`}
             >
               <span aria-hidden>{t.icon}</span>
-              <span className="hidden lg:inline">{t.label}</span>
+              <span className="text-[9px] leading-tight sm:hidden">{t.label}</span>
+              <span className="hidden text-sm lg:inline">{t.label}</span>
             </button>
           ))}
         </div>
@@ -505,11 +562,26 @@ export default function Editor({ initialImage, initialNotice, onReset }: { initi
         <button onClick={redo} disabled={!redoStack.length} aria-label="Redo (Ctrl+Shift+Z)" className="h-9 min-w-9 rounded-lg px-1.5 text-sm text-zinc-300 hover:bg-zinc-800 disabled:opacity-40 sm:px-2" title="Redo (Ctrl+Shift+Z)">↪</button>
         <div role="group" aria-label="Export and file actions" className="ml-auto flex items-center gap-1.5 sm:gap-2">
           <button onClick={copy} className="rounded-lg bg-zinc-800 px-2.5 py-1.5 text-sm font-medium hover:bg-zinc-700 sm:px-3" title="Copy to clipboard (Ctrl+C)">Copy</button>
-          <button onClick={download} className="rounded-lg bg-blue-600 px-2.5 py-1.5 text-sm font-semibold text-white hover:bg-blue-500 sm:px-3" title="Download PNG (Ctrl+S)"><span className="hidden sm:inline">Download </span>PNG</button>
+          <div className="relative flex items-stretch">
+            <button onClick={() => download('png')} className="rounded-l-lg bg-blue-600 px-2.5 py-1.5 text-sm font-semibold text-white hover:bg-blue-500 sm:px-3" title="Download PNG (Ctrl+S)"><span className="hidden sm:inline">Download </span>PNG</button>
+            <button
+              onClick={() => setExportMenu((v) => !v)}
+              aria-label="More download formats"
+              aria-expanded={exportMenu}
+              className="rounded-r-lg border-l border-blue-800 bg-blue-600 px-1.5 text-xs text-white hover:bg-blue-500"
+            >▾</button>
+            {exportMenu && (
+              <div className="absolute right-0 top-full z-10 mt-1 w-36 rounded-lg border border-zinc-700 bg-zinc-900 py-1 shadow-xl">
+                {([['png', 'PNG'], ['jpeg', 'JPG'], ['webp', 'WebP']] as const).map(([fmt, label]) => (
+                  <button key={fmt} onClick={() => download(fmt)} className="block w-full px-3 py-1.5 text-left text-sm text-zinc-200 hover:bg-zinc-800">Download {label}</button>
+                ))}
+              </div>
+            )}
+          </div>
           <button onClick={confirmReset} aria-label="New image" className="h-9 min-w-9 rounded-lg px-1.5 text-sm text-zinc-400 hover:bg-zinc-800 sm:px-2" title="New image">＋<span className="hidden sm:inline"> New</span></button>
         </div>
       </div>
-      <div ref={wrapRef} className="relative flex flex-1 items-center justify-center overflow-auto bg-zinc-950 p-3">
+      <div ref={wrapRef} className="relative flex flex-1 items-start justify-center overflow-auto bg-zinc-950 p-3 sm:items-center">
         <div className={extremeAspect ? 'relative' : 'relative max-h-full max-w-full'}>
           <canvas
             ref={canvasRef}
@@ -531,7 +603,7 @@ export default function Editor({ initialImage, initialNotice, onReset }: { initi
                   requestAnimationFrame(() => el.focus())
                 }
               }}
-              placeholder="Type, then Enter"
+              placeholder={textInput.note ? 'Note text, then Enter' : 'Type, then Enter'}
               className="absolute rounded border border-blue-500 bg-zinc-900/90 px-2 py-1 font-semibold text-white outline-none"
               style={{
                 left: `${Math.min((textInput.x / W) * 100, 70)}%`,
