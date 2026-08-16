@@ -234,7 +234,7 @@ export default function Landing({
         <section className="border-y border-zinc-100 bg-zinc-50/70">
           <div className="mx-auto grid max-w-6xl grid-cols-2 gap-6 px-4 py-10 text-center sm:grid-cols-4 sm:px-6">
             {[
-              ['10 tools', 'annotation toolkit'],
+              ['12 tools', 'annotation toolkit'],
               ['0 uploads', 'everything stays local'],
               ['$0', 'free, no account'],
               ['MV3', 'modern Chrome extension'],
@@ -258,7 +258,7 @@ export default function Landing({
                 Full undo/redo history means you can experiment freely.
               </p>
               <ul className="mt-6 space-y-3 text-[15px] text-zinc-600">
-                {['10 annotation tools with custom colors and stroke width', 'Numbered step counters and highlighter for tutorials', 'Keyboard shortcuts: 1–0 to switch tools, Ctrl+Z / Ctrl+Shift+Z'].map((t) => (
+                {['12 annotation tools with custom colors and stroke width', 'Magnifier callouts, numbered steps and notes for tutorials', 'Keyboard shortcuts: 1–0 to switch tools, Ctrl+Z / Ctrl+Shift+Z'].map((t) => (
                   <li key={t} className="flex items-start gap-2.5"><Icon d={IC.check} className="mt-0.5 h-5 w-5 shrink-0 text-blue-600" />{t}</li>
                 ))}
               </ul>
