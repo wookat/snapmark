@@ -1,0 +1,16 @@
+你是独立盲评评审。你不知道 A/B/C 分别是哪家产品，也不得猜测或试图识别。仅依据以下材料评审三个同类「截图相关工具」：
+
+材料：
+1. /home/ubuntu/r24/blind2/ 下 11 张匿名截图（A/B 各有 home desktop+mobile、editor desktop+mobile，B 另有 start-desktop；C 只有 home desktop+mobile——C 的工作流即其首页上传+样式化）。
+2. Lighthouse（移动模拟）实测：
+   - A：Perf 100 / A11y 100 / BP 100 / SEO 100；FCP 1.0s、LCP 1.0s、TBT 0ms、CLS 0.03
+   - B：Perf 84 / A11y 96 / BP 100 / SEO 100；FCP 1.7s、LCP 3.9s、TBT 190ms、CLS 0
+   - C：Perf 56 / A11y 83 / BP 77 / SEO 100；FCP 2.8s、LCP 4.1s、TBT 450ms、CLS 0.285
+
+禁止：打开任何网站、查看任何仓库代码、猜测产品身份。
+
+输出格式（markdown）：
+1. 表格：维度 | A | B | C | 胜者（六维：视觉设计、信息层级、交互与流程顺滑度、功能完整度、性能实测、文案与信任感，每维 1-10 分）
+2. 每维 2-5 句理由（必须引用截图/数据证据）
+3. 总分（每家 /60）与总体胜者
+4. A、B、C 各自最该改进的 3 件事
