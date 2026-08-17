@@ -258,7 +258,7 @@ export default function Landing({
                 Full undo/redo history means you can experiment freely.
               </p>
               <ul className="mt-6 space-y-3 text-[15px] text-zinc-600">
-                {['12 annotation tools with custom colors and stroke width', 'Magnifier callouts, numbered steps and notes for tutorials', 'Keyboard shortcuts: 1–0 to switch tools, Ctrl+Z / Ctrl+Shift+Z'].map((t) => (
+                {['12 annotation tools with custom colors and stroke width', 'Multi-page: annotate a whole tutorial, export every page at once', 'Keyboard shortcuts: 1–0 to switch tools, Ctrl+Z / Ctrl+Shift+Z'].map((t) => (
                   <li key={t} className="flex items-start gap-2.5"><Icon d={IC.check} className="mt-0.5 h-5 w-5 shrink-0 text-blue-600" />{t}</li>
                 ))}
               </ul>
