@@ -1,0 +1,20 @@
+你是独立盲评评审。本轮（第 4 轮）评审 A/B/C 三款截图/图像标注类工具，标签已重新随机分配，与上一轮的 A/B/C 无任何对应关系，禁止沿用上一轮的推断。
+
+规则：
+- 只依据 blind4/ 下的匿名截图与下方给出的 Lighthouse 实测数据评审；禁止访问任何网站、仓库或代码；禁止猜测产品身份。
+- 六个维度各打 1-10 分并给逐项理由：视觉设计、信息层级、交互与流程顺滑度、功能完整度、性能实测、文案与信任感；每维判定胜者。
+- 输出总分（/60）与总体胜者，并为 A/B/C 各给 3 条最该改进的建议。
+- 用 markdown 输出完整报告。
+
+Lighthouse（移动模拟）实测数据：
+- A：Perf 100 / A11y 89 / BP 100 / SEO 100；FCP 0.8s，LCP 1.2s，TBT 0ms，CLS 0
+- B：Perf 84 / A11y 96 / BP 100 / SEO 100；FCP 1.7s，LCP 3.9s，TBT 190ms，CLS 0
+- C：Perf 100 / A11y 100 / BP 100 / SEO 100；FCP 1.0s，LCP 1.0s，TBT 10ms，CLS 0.03
+
+截图清单：
+- A-home-desktop/mobile：A 首页 1440/375
+- A-editor-desktop：A 的工作台首屏
+- B-home-desktop/mobile：B 首页 1440/375
+- B-editor-desktop：B 的编辑器（已载入图片）
+- C-home-desktop/mobile：C 首页 1440/375
+- C-editor-desktop/mobile：C 编辑器 1440/375（桌面图为已载入图片、含多页页条状态）
