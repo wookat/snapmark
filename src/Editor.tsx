@@ -21,6 +21,13 @@ type Op =
   | { kind: 'shape'; shape: Shape }
   | { kind: 'crop'; rect: { x: number; y: number; w: number; h: number }; prevShapes: Shape[] }
 
+interface PageState {
+  base: Base
+  shapes: Shape[]
+  history: Op[]
+  redoStack: Op[]
+}
+
 // Site never loads a webfont; system-ui keeps exports consistent with what the user sees.
 const CANVAS_FONT = 'system-ui, sans-serif'
 
@@ -201,8 +208,11 @@ export default function Editor({ initialImage, initialNotice, onReset }: { initi
   const [draft, setDraft] = useState<Shape | null>(null)
   const [textInput, setTextInput] = useState<{ x: number; y: number; note?: boolean } | null>(null)
   const [exportMenu, setExportMenu] = useState(false)
-  const [toolsOpen, setToolsOpen] = useState(true)
+  const [toolsOpen, setToolsOpen] = useState(() => typeof window === 'undefined' || window.innerWidth >= 640)
   const [toast, setToast] = useState('')
+  const [pages, setPages] = useState<PageState[]>([])
+  const [pageIdx, setPageIdx] = useState(0)
+  const pageFileRef = useRef<HTMLInputElement>(null)
   const draftRef = useRef<Shape | null>(null)
   const textMountRef = useRef(0)
 
@@ -432,20 +442,22 @@ export default function Editor({ initialImage, initialNotice, onReset }: { initi
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
-  const exportBlob = (mime: string = 'image/png'): Promise<Blob> =>
+  const exportPageBlob = (page: { base: Base; shapes: Shape[] }, mime: string = 'image/png'): Promise<Blob> =>
     new Promise((resolve) => {
       const c = document.createElement('canvas')
-      c.width = W
-      c.height = H
+      c.width = page.base.width
+      c.height = page.base.height
       const ctx = c.getContext('2d')!
       if (mime === 'image/jpeg') {
         ctx.fillStyle = '#ffffff'
-        ctx.fillRect(0, 0, W, H)
+        ctx.fillRect(0, 0, c.width, c.height)
       }
-      ctx.drawImage(base, 0, 0)
-      for (const s of shapes) drawShape(ctx, s)
+      ctx.drawImage(page.base, 0, 0)
+      for (const s of page.shapes) drawShape(ctx, s)
       c.toBlob((b) => resolve(b!), mime, 0.92)
     })
+
+  const exportBlob = (mime: string = 'image/png'): Promise<Blob> => exportPageBlob({ base, shapes }, mime)
 
   const showToast = (msg: string, ms = 2000) => {
     setToast(msg)
@@ -504,6 +516,72 @@ export default function Editor({ initialImage, initialNotice, onReset }: { initi
   // so adding a shortcut can't silently capture stale state.
   const handlersRef = useRef({ undo, redo, download, copy })
   handlersRef.current = { undo, redo, download, copy }
+
+  const snapshotCurrent = (): PageState => ({ base, shapes, history, redoStack })
+
+  const loadPage = (p: PageState) => {
+    draftRef.current = null
+    setDraft(null)
+    setTextInput(null)
+    setBase(p.base)
+    setShapes(p.shapes)
+    setHistory(p.history)
+    setRedoStack(p.redoStack)
+  }
+
+  const switchPage = (i: number) => {
+    if (i === pageIdx || !pages[i]) return
+    const target = pages[i]
+    setPages((prev) => {
+      const next = [...prev]
+      next[pageIdx] = snapshotCurrent()
+      return next
+    })
+    setPageIdx(i)
+    loadPage(target)
+  }
+
+  const addPageFile = (file: File) => {
+    const url = URL.createObjectURL(file)
+    const img = new Image()
+    img.onload = () => {
+      URL.revokeObjectURL(url)
+      const p: PageState = { base: img, shapes: [], history: [], redoStack: [] }
+      const next = pages.length ? [...pages] : [snapshotCurrent()]
+      if (pages.length) next[pageIdx] = snapshotCurrent()
+      next.push(p)
+      setPages(next)
+      setPageIdx(next.length - 1)
+      loadPage(p)
+      track('add_page')
+      showToast('Page added')
+    }
+    img.src = url
+  }
+
+  const allPages = (): { base: Base; shapes: Shape[] }[] => {
+    if (pages.length < 2) return [{ base, shapes }]
+    const next = [...pages]
+    next[pageIdx] = snapshotCurrent()
+    return next
+  }
+
+  const downloadAll = async () => {
+    setExportMenu(false)
+    const list = allPages()
+    const stamp = new Date().toISOString().slice(0, 19).replace('T', '-').replaceAll(':', '')
+    for (let i = 0; i < list.length; i++) {
+      const blob = await exportPageBlob(list[i])
+      const a = document.createElement('a')
+      a.href = URL.createObjectURL(blob)
+      a.download = `snapmark-${stamp}-p${i + 1}.png`
+      a.click()
+      URL.revokeObjectURL(a.href)
+      await new Promise((r) => setTimeout(r, 300))
+    }
+    track('download_all')
+    showToast(`${list.length} pages downloaded`)
+  }
 
   const commitText = (value: string) => {
     if (textInput && value.trim()) {
@@ -607,12 +685,43 @@ export default function Editor({ initialImage, initialNotice, onReset }: { initi
                 {([['png', 'PNG'], ['jpeg', 'JPG'], ['webp', 'WebP']] as const).map(([fmt, label]) => (
                   <button key={fmt} onClick={() => download(fmt)} className="block w-full px-3 py-1.5 text-left text-sm text-zinc-200 hover:bg-zinc-800">Download {label}</button>
                 ))}
+                {pages.length > 1 && (
+                  <button onClick={downloadAll} className="block w-full border-t border-zinc-700 px-3 py-1.5 text-left text-sm text-zinc-200 hover:bg-zinc-800">All {pages.length} pages (PNG)</button>
+                )}
               </div>
             )}
           </div>
+          <button onClick={() => pageFileRef.current?.click()} aria-label="Add page" className="h-9 min-w-9 rounded-lg px-1.5 text-sm text-zinc-400 hover:bg-zinc-800 sm:px-2" title="Add another image as a new page">⧉<span className="hidden sm:inline"> Page</span></button>
+          <input
+            ref={pageFileRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            aria-hidden
+            tabIndex={-1}
+            onChange={(e) => {
+              const f = e.target.files?.[0]
+              if (f) addPageFile(f)
+              e.target.value = ''
+            }}
+          />
           <button onClick={confirmReset} aria-label="New image" className="h-9 min-w-9 rounded-lg px-1.5 text-sm text-zinc-400 hover:bg-zinc-800 sm:px-2" title="New image">＋<span className="hidden sm:inline"> New</span></button>
         </div>
       </div>
+      {pages.length > 1 && (
+        <div role="tablist" aria-label="Pages" className="flex items-center gap-1 border-b border-zinc-800 bg-zinc-900/60 px-2 py-1 sm:px-3">
+          {pages.map((_, i) => (
+            <button
+              key={i}
+              role="tab"
+              aria-selected={i === pageIdx}
+              onClick={() => switchPage(i)}
+              className={`h-7 min-w-8 rounded-md px-2 text-xs font-medium transition ${i === pageIdx ? 'bg-blue-600 text-white' : 'text-zinc-400 hover:bg-zinc-800'}`}
+            >{i + 1}</button>
+          ))}
+          <span className="ml-2 text-[11px] text-zinc-500">Page {pageIdx + 1} of {pages.length}</span>
+        </div>
+      )}
       <div ref={wrapRef} className="relative flex flex-1 items-start justify-center overflow-auto bg-zinc-950 p-3 sm:items-center">
         <div className={extremeAspect ? 'relative' : 'relative max-h-full max-w-full'}>
           <canvas

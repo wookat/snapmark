@@ -64,4 +64,12 @@
 
 ## 4. PR / 部署 / 线上复测
 
-（待 PR 合并后回填）
+- PR：https://github.com/wookat/snapmark/pull/23（已合并 main）。
+- 部署：main 分支 `npx wrangler deploy`，版本 `c61b50a2-c018-406e-9759-9126113a6351`，域名 ext.zalize.com。
+- 线上复测（Playwright）：
+  - 375px：折叠开关可见→折叠后工具网格隐藏 ✅；画一条箭头→PNG 下载成功 ✅（live2-editor-375 / -collapsed 截图）。
+  - 1440px：折叠开关隐藏、工具栏完整 ✅（live2-editor-1440 截图）。
+  - Share：无 `canShare` 环境按钮不渲染 ✅；注入 `canShare/share`（模拟移动浏览器）后按钮出现、点击后 toast「Shared」 ✅（live2-share-375 截图）。
+  - Lighthouse（移动模拟）：Perf 100 / A11y 100 / BP 100 / SEO 100；FCP 1.0s，LCP 1.0s，TBT 0ms，CLS 0.03。
+
+第 3 轮：重新匿名盲评（考虑纳入更强标杆），针对功能完整度残余差距（多页/教程场景）评估 P1。
