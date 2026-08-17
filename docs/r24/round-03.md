@@ -71,3 +71,10 @@
 ## 7. PR / 部署 / 线上复测
 
 （PR 合并与部署后回填。）
+- PR：https://github.com/wookat/snapmark/pull/24（已合并 main）。
+- 部署：main 分支 `npx wrangler deploy`，版本 `7d8f71ff-0aeb-4dec-ac34-e15509a35c3e`，域名 ext.zalize.com。
+- 线上复测（Playwright）：
+  - 1440px：页 1 画箭头 → 添加页 2 → 页条出现；切页后每页状态独立（页 1 保留 1 annotation）✅；Download all → `-p1.png`、`-p2.png` 两个文件 ✅（live3-editor-1440 截图）。
+  - 375px：工具栏默认折叠 ✅、点开关展开正常 ✅（live3-editor-375 截图）。
+  - Lighthouse（移动模拟）：Perf 100 / A11y 100 / BP 100 / SEO 100；FCP 1.0s，LCP 1.0s，TBT 10ms，CLS 0.03。
+- 进入第 4 轮终评。
