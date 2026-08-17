@@ -201,6 +201,7 @@ export default function Editor({ initialImage, initialNotice, onReset }: { initi
   const [draft, setDraft] = useState<Shape | null>(null)
   const [textInput, setTextInput] = useState<{ x: number; y: number; note?: boolean } | null>(null)
   const [exportMenu, setExportMenu] = useState(false)
+  const [toolsOpen, setToolsOpen] = useState(true)
   const [toast, setToast] = useState('')
   const draftRef = useRef<Shape | null>(null)
   const textMountRef = useRef(0)
@@ -469,6 +470,24 @@ export default function Editor({ initialImage, initialNotice, onReset }: { initi
     showToast(`${ext.toUpperCase()} downloaded`)
   }
 
+  const canShareFiles = typeof navigator !== 'undefined' && typeof navigator.canShare === 'function'
+
+  const share = async () => {
+    const blob = await exportBlob()
+    const file = new File([blob], 'snapmark.png', { type: 'image/png' })
+    if (!navigator.canShare({ files: [file] })) {
+      showToast('Sharing not supported — use Copy or Download')
+      return
+    }
+    try {
+      await navigator.share({ files: [file] })
+      track('share')
+      showToast('Shared')
+    } catch {
+      // user cancelled the share sheet
+    }
+  }
+
   const copy = async () => {
     try {
       // ClipboardItem must be constructed synchronously within the user gesture
@@ -508,7 +527,17 @@ export default function Editor({ initialImage, initialNotice, onReset }: { initi
           <span className="hidden text-sm font-bold tracking-tight lg:inline">SnapMark</span>
         </button>
         <div className="mx-1 hidden h-6 w-px bg-zinc-700 sm:block" />
-        <div role="group" aria-label="Drawing tools" className="grid w-full grid-cols-6 gap-1 sm:flex sm:w-auto sm:flex-wrap sm:items-center">
+        <button
+          onClick={() => setToolsOpen((v) => !v)}
+          aria-expanded={toolsOpen}
+          aria-label={toolsOpen ? 'Collapse tools' : 'Expand tools'}
+          className="flex h-9 items-center gap-1 rounded-lg px-2 text-sm text-zinc-300 hover:bg-zinc-800 sm:hidden"
+        >
+          <span aria-hidden>{TOOLS.find((t) => t.id === tool)?.icon}</span>
+          <span className="text-xs">{TOOLS.find((t) => t.id === tool)?.label}</span>
+          <span aria-hidden className="text-xs">{toolsOpen ? '▴' : '▾'}</span>
+        </button>
+        <div role="group" aria-label="Drawing tools" className={`${toolsOpen ? 'grid' : 'hidden'} w-full grid-cols-6 gap-1 sm:flex sm:w-auto sm:flex-wrap sm:items-center`}>
           {TOOLS.map((t) => (
             <button
               key={t.id}
@@ -562,6 +591,9 @@ export default function Editor({ initialImage, initialNotice, onReset }: { initi
         <button onClick={redo} disabled={!redoStack.length} aria-label="Redo (Ctrl+Shift+Z)" className="h-9 min-w-9 rounded-lg px-1.5 text-sm text-zinc-300 hover:bg-zinc-800 disabled:opacity-40 sm:px-2" title="Redo (Ctrl+Shift+Z)">↪</button>
         <div role="group" aria-label="Export and file actions" className="ml-auto flex items-center gap-1.5 sm:gap-2">
           <button onClick={copy} className="rounded-lg bg-zinc-800 px-2.5 py-1.5 text-sm font-medium hover:bg-zinc-700 sm:px-3" title="Copy to clipboard (Ctrl+C)">Copy</button>
+          {canShareFiles && (
+            <button onClick={share} className="rounded-lg bg-zinc-800 px-2.5 py-1.5 text-sm font-medium hover:bg-zinc-700 sm:px-3" title="Share image (stays on your device until you pick an app)">Share</button>
+          )}
           <div className="relative flex items-stretch">
             <button onClick={() => download('png')} className="rounded-l-lg bg-blue-600 px-2.5 py-1.5 text-sm font-semibold text-white hover:bg-blue-500 sm:px-3" title="Download PNG (Ctrl+S)"><span className="hidden sm:inline">Download </span>PNG</button>
             <button
